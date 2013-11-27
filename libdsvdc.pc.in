@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libdsvdc
+Description: digitalSTROM vDC Interface Library
+Requires: protobuf-c
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -ldsvdc @PROTOBUFC_LIBS@ @PTHREAD_LIBS@ @LIBS@
+Cflags: -I${includedir} @PTHREAD_CFLAGS@
+

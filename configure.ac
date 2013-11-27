@@ -1,0 +1,113 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ([2.66])
+AC_INIT([libdsvdc], [0.1.0], [jin@dev.digitalstrom.org])
+AC_CONFIG_AUX_DIR(configure_aux)
+AC_CONFIG_SRCDIR([src/dsvdc.c])
+AC_CONFIG_HEADERS([config.h])
+AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects])
+AC_CONFIG_MACRO_DIR([m4])
+
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+dnl
+dnl            current:revision:age
+dnl
+dnl current:  increment if interfaces have been added, removed or changed
+dnl revision: increment if source code has changed, set to zero if current is
+dnl           incremented
+dnl age:      increment if interfaces have been added, set to zero if
+dnl           interfaces have been removed or changed
+LIBDSVDC_LT_VERSION=0:0:0
+AC_SUBST(LIBDSVDC_LT_VERSION)
+
+
+BUILD_TESTS="yes"
+
+AC_ARG_ENABLE([debug],
+    [AC_HELP_STRING([--enable-debug], [build debug version]) ],
+    [
+        if test "x$enableval" = "xyes"; then
+            CFLAGS="$CFLAGS -g -O0"
+            AC_DEFINE([DEBUG], [1], [build with debug output])
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([tests],
+    [AC_HELP_STRING([--disable-tests], [build unit tests (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_TESTS="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_TESTS="yes"
+        fi
+    ]
+)
+
+# Checks for programs.
+AC_PROG_CC
+AM_PROG_CC_C_O
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+AC_PROG_LIBTOOL
+
+# Checks for libraries.
+
+# Checks for header files.
+AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h sys/socket.h stdlib.h stdint.h string.h unistd.h time.h],
+        [], [AC_MSG_ERROR([required system header not found])])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_TYPE_UINT8_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_INT32_T
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_CHECK_FUNCS([memset select socket strerror])
+
+AX_PTHREAD([], [ AC_MSG_ERROR([required pthread library not found]) ])
+
+PKG_PROG_PKG_CONFIG
+
+if test -z "$PKG_CONFIG"; then
+    AC_MSG_ERROR([pkg-config not found on your system])
+fi
+
+PKG_CHECK_MODULES([PROTOBUFC], [libprotobuf-c], [],
+    [
+        AC_MSG_ERROR([$PROTBUFC_PKG_ERRORS])
+    ])
+
+AC_PATH_PROG(PROTOC, protoc-c, "")
+if (test -z "$PROTOC"); then
+    AC_MSG_ERROR([Can not compile protobuf messages, protoc-c not found])
+fi
+AC_SUBST(PROTOC)
+
+if test "x$BUILD_TESTS" = "xyes"; then
+    PKG_CHECK_MODULES([CHECK], [check],
+        [
+            LIBCHECK_FOUND="yes"
+        ],
+        [
+            AC_MSG_WARN([libcheck not found, not building unit tests: $CHECK_PKG_ERRORS])
+            BUILD_TESTS="no"
+        ])
+fi
+
+AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
+
+AC_CONFIG_FILES([Makefile
+                 messages/Makefile
+                 src/Makefile
+                 tests/Makefile
+                 examples/Makefile
+                 libdsvdc.pc
+                 ])
+AC_OUTPUT
