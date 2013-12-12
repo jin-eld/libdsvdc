@@ -32,7 +32,7 @@ START_TEST(test_init_cleanup)
 {
     dsvdc_t *handle;
     int i;
-    ck_assert_msg(dsvdc_new(0, &handle) == DSVDC_OK,
+    ck_assert_msg(dsvdc_new(0, "1", NULL, &handle) == DSVDC_OK,
                   "dsvdc_new() initializatino failed");
 
     for (i = 0; i < 3; i++)
