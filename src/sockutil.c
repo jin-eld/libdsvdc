@@ -35,7 +35,8 @@
 #include "sockutil.h"
 #include "log.h"
 
-ssize_t sockread(int sockfd, unsigned char *data, size_t len, int timeout)
+int sockread(int sockfd, unsigned char *data, size_t len, int timeout,
+             size_t *out_bytes_read)
 {
     int ret;
     struct timeval tv;
@@ -44,7 +45,11 @@ ssize_t sockread(int sockfd, unsigned char *data, size_t len, int timeout)
     ssize_t bytes_total = 0;
     ssize_t bytes_read = 0;
     int eod = 0;
-
+    if (out_bytes_read)
+    {
+        *out_bytes_read = 0;
+    }
+ 
     while (1)
     {
         FD_ZERO(&rfds);
@@ -76,14 +81,23 @@ ssize_t sockread(int sockfd, unsigned char *data, size_t len, int timeout)
                 continue;
             }
             log("failed to select on socket: %s\n", strerror(errno));
+            if (out_bytes_read)
+            {
+                *out_bytes_read = bytes_total;
+            }
             return socket_select_failed;
         }
 
         if (ret == 0)
         {
+            if (out_bytes_read)
+            {
+                *out_bytes_read = bytes_total;
+            }
+
             if (eod)
             {
-                return bytes_total;
+                return socket_ok;
             }
             else
             {
@@ -102,13 +116,24 @@ ssize_t sockread(int sockfd, unsigned char *data, size_t len, int timeout)
 
             if (bytes_read < 0)
             {
+                if (out_bytes_read)
+                {
+                    *out_bytes_read = bytes_total;
+                }
+
                 log("recv failed: %s\n", strerror(errno));
                 return socket_recv_failed;
             }
 
+            // remote socket was closed
             if (bytes_read == 0)
             {
-                break;
+                if (out_bytes_read)
+                {
+                    *out_bytes_read = bytes_total;
+                }
+
+                return socket_closed;
             }
 
             bytes_total += bytes_read;
@@ -128,7 +153,12 @@ ssize_t sockread(int sockfd, unsigned char *data, size_t len, int timeout)
         return socket_error;
     }
 
-    return bytes_total;
+    if (out_bytes_read)
+    {
+        *out_bytes_read = bytes_total;
+    }
+
+    return socket_ok;
 }
 
 ssize_t sockwrite(int sockfd, unsigned char *data, size_t len, int timeout)

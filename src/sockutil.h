@@ -25,14 +25,17 @@
 
 enum socket_ops
 {
+    socket_ok = 0,
     socket_operation_timed_out = -1,
     socket_select_failed = -2,
     socket_recv_failed = -3,
     socket_send_failed = -4,
-    socket_error = -5
+    socket_error = -5,
+    socket_closed = -6
 };
 
-ssize_t sockread(int sockfd, unsigned char *data, size_t len, int timeout);
+int sockread(int sockfd, unsigned char *data, size_t len, int timeout,
+             size_t *out_bytes_read);
 ssize_t sockwrite(int sockfd, unsigned char *data, size_t len, int timeout);
 
 #endif//__SOCKUTIL_H__

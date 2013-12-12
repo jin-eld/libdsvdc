@@ -357,18 +357,21 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
     if (connected && FD_ISSET(handle->connected_fd, &rfds))
     {
         uint16_t size;
-        ssize_t len = sockread(handle->connected_fd,
+        size_t len;
+        retcode = sockread(handle->connected_fd,
                             (unsigned char *)(&size),
-                             sizeof(uint16_t), timeout);
+                             sizeof(uint16_t), timeout, &len);
         /* if data packet length could not be read, or the data is too big (i.e.
          * protocol got out of sync or someone is messing with us), then
          * reset the connection */
-        if (len != sizeof(uint16_t) || (ntohs(size) > MAX_DATA_SIZE))
+        if ((retcode != socket_ok) || (len != sizeof(uint16_t)) ||
+           (ntohs(size) > MAX_DATA_SIZE))
         {
             close(handle->connected_fd);
             handle->connected_fd = -1;
             log("could not read incoming message length or "
                 "message exceeds allowed size, resetting connection.\n");
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
             return;
         }
 
@@ -383,11 +386,12 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
 
                 log("could not allocate memory for incoming "
                     "message, resetting connection.\n");
+                pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
                 return;
             }
 
-            len = sockread(handle->connected_fd, data, size, timeout);
-            if ((len < 0) || ((uint16_t)len != size))
+            retcode = sockread(handle->connected_fd, data, size, timeout, &len);
+            if ((retcode != socket_ok) || ((uint16_t)len != size))
             {
                 close(handle->connected_fd);
                 handle->connected_fd = -1;
