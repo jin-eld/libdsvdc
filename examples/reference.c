@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 
     bool ready = false;
     bool announced = false;
+    bool printed = false;
 
     memset(&action, 0, sizeof(action));
     action.sa_handler = signal_handler;
@@ -104,7 +105,7 @@ int main(int argc, char **argv)
     /* initialize new library instance */
     if (dsvdc_new(0, g_vdc_dsuid, &ready, &handle) != DSVDC_OK)
     {
-        fprintf(stderr, "dsvdc_new() initializatino failed\n");
+        fprintf(stderr, "dsvdc_new() initialization failed\n");
         return EXIT_FAILURE;
     }
 
@@ -119,12 +120,17 @@ int main(int argc, char **argv)
         dsvdc_work(handle, 2);
         if (!dsvdc_is_connected(handle))
         {
-            fprintf(stderr, "We are not connected!\n");
+            if (!printed)
+            {
+                fprintf(stderr, "vdC example: we are not connected!\n");
+                printed = true;
+            }
             announced = false;
             ready = false;
         }
         else
         {
+            printed = false;
             if (ready && !announced)
             {
                 if (dsvdc_announce_device(handle, g_dev_dsuid,
