@@ -27,24 +27,40 @@ message vdsm_SendRemove {
     optional string dSUID = 1;
 }
 
+message PropertyValue {
+    optional bool v_bool = 1;
+    optional uint64 v_uint64 = 2;
+    optional int64 v_int64 = 3;
+    optional double v_double = 4;
+    optional string v_string = 5;
+}
+
+message PropertyElement {
+    optional string name  = 1;
+    optional PropertyValue value = 2;
+}
+
+message Property {
+    optional string name = 1;
+    repeated PropertyElement elements = 3;
+}
+
 message vdsm_RequestGetProperty {
     optional string dSUID = 1;
     optional string name = 2;
-    optional int32 value = 3;
+    optional uint32 index = 3 [ default = 0 ];
+    optional uint32 count = 4 [ default = 0 ]; // 0 means "all"
 }
 
 message vdc_ResponseGetProperty {
-    // TODO: check with team
+    repeated Property properties = 1;
 }
 
 message vdsm_SendSetProperty {
     optional string dSUID = 1;
-    optional string name = 2;
-    optional uint32 index = 3;
-    optional uint32 offset = 4;
-    optional uint32 count = 5 [ default = 1 ];
-    // TODO: value - check with team
-
+    optional uint32 offset = 2 [ default = 0 ];
+    optional uint32 count = 3 [ default = 1 ];
+    repeated Property properties = 4;
 }
 
 message vdsm_SendPing {
@@ -69,7 +85,6 @@ message vdsm_NotificationSaveScene {
     optional int32 group = 3;
     optional int32 zoneID = 4;
 }
-
 
 message vdsm_NotificationUndoScene {
     optional string dSUID = 1;
@@ -109,7 +124,7 @@ message vdsm_NotificationSetControlValue {
 message vdc_SendPushProperty {
     optional string dSUID = 1;
     optional string name = 2;
-    optional uint32 index = 3;
-    // TODO: value 
+    optional uint32 offset = 3 [ default = 0 ];
+    repeated Property properties = 4;
 }
 
