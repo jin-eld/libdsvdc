@@ -23,6 +23,7 @@
 #define __DSVDC_LOG_H__
 
 #ifdef DEBUG
+    void dsvdc_log(const char *format, const char *function, ...);
     #define log(format, ...)    dsvdc_log(format, __func__, ## __VA_ARGS__) 
 #else
     #define log(format, ...)
