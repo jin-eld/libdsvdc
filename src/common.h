@@ -112,9 +112,13 @@ struct dsvdc {
                                  int32_t group, int32_t zone_id,
                                  void *userdata);
     void (*vdsm_send_set_control_value)(dsvdc_t *handle, const char *dsuid,
-                                        int32_t value, int32_t group,
-                                        int32_t zone_id, void *userdata);
+                                 int32_t value, int32_t group,
+                                 int32_t zone_id, void *userdata);
+    void (*vdsm_request_get_property)(dsvdc_t *handle, const char *dsuid,
+                                 const char *name, uint32_t offset,
+                                 uint32_t count, dsvdc_property_t *property,
+                                 void *userdata);
 };
 
-#endif/*__LIBDSVDC_MSG_PROCESSOR_H__*/
+#endif/*__LIBDSVDC_COMMON_H__*/
 

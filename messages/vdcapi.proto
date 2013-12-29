@@ -41,14 +41,13 @@ message PropertyElement {
 }
 
 message Property {
-    optional string name = 1;
-    repeated PropertyElement elements = 3;
+    repeated PropertyElement elements = 1;
 }
 
 message vdsm_RequestGetProperty {
     optional string dSUID = 1;
     optional string name = 2;
-    optional uint32 index = 3 [ default = 0 ];
+    optional uint32 offset = 3 [ default = 0 ];
     optional uint32 count = 4 [ default = 0 ]; // 0 means "all"
 }
 
@@ -58,9 +57,10 @@ message vdc_ResponseGetProperty {
 
 message vdsm_SendSetProperty {
     optional string dSUID = 1;
-    optional uint32 offset = 2 [ default = 0 ];
-    optional uint32 count = 3 [ default = 1 ];
-    repeated Property properties = 4;
+    optional string name = 2;
+    optional uint32 offset = 3 [ default = 0 ];
+    optional uint32 count = 4 [ default = 1 ];
+    repeated Property properties = 5;
 }
 
 message vdsm_SendPing {

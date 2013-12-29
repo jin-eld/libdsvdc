@@ -11,6 +11,8 @@ libdsvdc_la_SOURCES = \
     log.c \
     msg_processor.c \
     msg_processor.h \
+    properties.h \
+    properties.c \
     sockutil.c \
     sockutil.h \
     utlist.h

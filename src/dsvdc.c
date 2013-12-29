@@ -141,7 +141,7 @@ static int dsvdc_setup_socket(dsvdc_t *handle)
     return DSVDC_OK;
 }
 
-int dsvdc_new(unsigned short port, const char * dsuid, void *userdata,
+int dsvdc_new(unsigned short port, const char *dsuid, void *userdata,
               dsvdc_t **handle)
 {
     *handle = NULL;
@@ -549,6 +549,22 @@ void dsvdc_set_control_value_callback(dsvdc_t *handle,
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
+void dsvdc_set_get_property_callback(dsvdc_t *handle,
+                        void (*function)(dsvdc_t *handle, const char *dsuid,
+                                         const char *name, uint32_t offset,
+                                         uint32_t count,
+                                         dsvdc_property_t *property,
+                                         void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_request_get_property = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
 void dsvdc_cleanup(dsvdc_t *handle)
 {
     if (!handle)
@@ -573,6 +589,7 @@ void dsvdc_cleanup(dsvdc_t *handle)
     }
 
     handle->vdsm_request_hello = NULL;
+    handle->vdsm_request_get_property = NULL;
     handle->vdsm_send_ping = NULL;
     handle->vdsm_send_bye = NULL;
     handle->vdsm_send_remove = NULL;

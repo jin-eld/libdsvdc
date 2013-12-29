@@ -26,13 +26,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
 #include "common.h"
 #include "msg_processor.h"
 #include "sockutil.h"
 #include "log.h"
 #include "utlist.h"
-
+#include "properties.h"
 
 int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
 {
@@ -302,7 +304,6 @@ static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
 
 static void dsvdc_process_ping(dsvdc_t *handle, Vdcapi__Message *msg)
 {
-    int ret;
     log("received VDSM_SEND_PING\n");
 
     if (!msg->vdsm_send_ping)
@@ -719,6 +720,69 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
+static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
+{
+    log("received VDSM_REQUEST_GET_PROPERTY\n");
+
+    uint32_t offset = 0;
+    uint32_t count = 0;
+
+    if (!msg->vdsm_request_get_property)
+    {
+        log("received VDSM_REQUEST_GET_PROPERTY message type, but data is "
+            "missing!\n");
+        return;
+    }
+
+    if (!msg->vdsm_request_get_property->dsuid)
+    {
+        log("received VDSM_REQUEST_GET_PROPERTY: missing dSUID!\n");
+        return;
+    }
+
+    if (!msg->vdsm_request_get_property->name)
+    {
+        log("received VDSM_REQUEST_GET_PROPERTY: missing property name!\n");
+        return;
+    }
+
+    if (msg->vdsm_request_get_property->has_offset)
+    {
+        offset = msg->vdsm_request_get_property->offset;
+    }
+
+    if (msg->vdsm_request_get_property->has_count)
+    {
+        count = msg->vdsm_request_get_property->count;
+    }
+
+    log("VDSM_REQUEST_GET_PROPERTY/%u: dSUID[ %s], name[ %s ], index[ %u ], "
+        "count[ %u ]\n", msg->message_id, msg->vdsm_request_get_property->dsuid,
+        msg->vdsm_request_get_property->name, offset, count);
+
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    if (handle->vdsm_request_get_property)
+    {
+        dsvdc_property_t *property = NULL;
+        int ret = dsvdc_property_new(msg->vdsm_request_get_property->name,
+                                     &property, 1);
+        if (ret == DSVDC_OK)
+        {
+            property->message_id = msg->message_id;
+        }
+        else
+        {
+            log("VDSM_REQUEST_GET_PROPERTY: could not allocave new property, "
+                "error code: %d\n", ret);
+        }
+        handle->vdsm_request_get_property(handle,
+                msg->vdsm_request_get_property->dsuid,
+                msg->vdsm_request_get_property->name,
+                offset, count, property, handle->callback_userdata);
+    }
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
 static cached_request_t *dsvdc_get_cached_request(dsvdc_t *handle, uint32_t id)
 {
     cached_request_t *request;
@@ -774,8 +838,6 @@ static void dsvdc_process_generic_response(dsvdc_t *handle,
 
 void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
 {
-    int ret;
-
     Vdcapi__Message *msg = vdcapi__message__unpack(NULL, len, data);
     if (!msg)
     {
@@ -790,7 +852,7 @@ void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
             break;
 
         case VDCAPI__TYPE__VDSM_REQUEST_GET_PROPERTY:
-            log("received VDSM_REQUEST_GET_PROPERTY\n");
+            dsvdc_process_get_property(handle, msg);
             break;
 
         case VDCAPI__TYPE__VDSM_SEND_PING:

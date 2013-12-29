@@ -31,8 +31,8 @@
 #include "dsvdc.h"
 
 static int g_shutdown_flag = 0;
-static const char *g_vdc_dsuid = "000000000000000000000001";
-static const char *g_dev_dsuid = "000000000000000000000002";
+static const char *g_vdc_dsuid = "3504175FE0000000BC514CBE";
+static const char *g_dev_dsuid = "3504175FE000000098BD8E80";
 
 void signal_handler(int signum)
 {
@@ -71,6 +71,35 @@ static void bye_cb(dsvdc_t *handle, void *userdata)
     printf("received bye, vdSM terminated our session\n");
     bool *ready = (bool *)userdata;
     *ready = false;
+}
+
+static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
+                       uint32_t offset, uint32_t count,
+                       dsvdc_property_t *property, void *userdata)
+{
+    printf("received get property callback for device %s\n", dsuid);
+    if (strcmp(name, "buttonInputSettings") == 0)
+    {
+        dsvdc_property_add_uint(property, 0, "group", 1);
+        dsvdc_property_add_uint(property, 0, "function", 5);
+        dsvdc_property_add_uint(property, 0, "mode", 0);
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "outputSettings") == 0)
+    {
+        dsvdc_property_add_uint(property, 0, "group", 1);
+        dsvdc_property_add_uint(property, 0, "mode", 1);
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "name") == 0)
+    {
+        dsvdc_property_add_string(property, 0, "name", "libdSvDC");
+        dsvdc_send_property_response(handle, property);
+    }
+    else
+    {
+        dsvdc_property_free(property);
+    }
 }
 
 int main(int argc, char **argv)
@@ -113,6 +142,7 @@ int main(int argc, char **argv)
     dsvdc_set_hello_callback(handle, hello_cb);
     dsvdc_set_ping_callback(handle, ping_cb);
     dsvdc_set_bye_callback(handle, bye_cb);
+    dsvdc_set_get_property_callback(handle, getprop_cb);
 
     while(!g_shutdown_flag)
     {
