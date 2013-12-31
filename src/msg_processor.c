@@ -46,9 +46,8 @@ int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
         return DSVDC_ERR_NOT_CONNECTED;
     }
 
-    void *msg_buf;
     size_t msg_len = vdcapi__message__get_packed_size(msg);
-    msg_buf = malloc(msg_len);
+    uint8_t *msg_buf = malloc(msg_len * sizeof(uint8_t));
     if (!msg_buf)
     {
         log("could not allocate %zu bytes for protobuf message "
@@ -77,6 +76,7 @@ int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
         return DSVDC_ERR_SOCKET;
     }
 
+    free(msg_buf);
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
     return DSVDC_OK;
 }

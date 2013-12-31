@@ -163,9 +163,27 @@ int dsvdc_new(unsigned short port, const char *dsuid, void *userdata,
 
     /* init members */
     memset(inst->vdsm_dsuid, 0, sizeof(inst->vdsm_dsuid));
+    memset(inst->vdc_dsuid, 0, sizeof(inst->vdc_dsuid));
     inst->port = port;
+    inst->listen_fd = -1;
+    inst->connected_fd = -1;
+    inst->vdsm_push_uri = NULL;
+    inst->requests_list = NULL;
+    inst->last_list_cleanup = time(NULL);
     inst->request_id = 0;
     inst->callback_userdata = userdata;
+    inst->vdsm_request_hello = NULL;
+    inst->vdsm_send_ping = NULL;
+    inst->vdsm_send_bye = NULL;
+    inst->vdsm_send_remove = NULL;
+    inst->vdsm_send_call_scene = NULL;
+    inst->vdsm_send_save_scene = NULL;
+    inst->vdsm_send_undo_scene = NULL;
+    inst->vdsm_send_set_local_prio = NULL;
+    inst->vdsm_send_call_min_scene = NULL;
+    inst->vdsm_send_identify = NULL;
+    inst->vdsm_send_set_control_value = NULL;
+    inst->vdsm_request_get_property = NULL;
 
     if (pthread_mutexattr_init(&attr) != 0)
     {
@@ -222,7 +240,7 @@ bool dsvdc_is_connected(dsvdc_t *handle)
 /* walk the requests list and remove obsolete requests */
 static void dsvdc_cleanup_request_list(dsvdc_t *handle, bool connected)
 {
-    cached_request_t *request;
+    cached_request_t *request = NULL;
     int code;
 
     if (connected)

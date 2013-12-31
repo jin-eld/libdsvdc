@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 
     printf("libdSvDC example test program, press Ctrl-C to quit\n");
 
-    dsvdc_t *handle;
+    dsvdc_t *handle = NULL;
 
     /* initialize new library instance */
     if (dsvdc_new(0, g_vdc_dsuid, &ready, &handle) != DSVDC_OK)
