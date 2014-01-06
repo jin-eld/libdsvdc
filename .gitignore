@@ -28,8 +28,11 @@ POTFILES
 m4/*
 libdsvdc.pc
 tests/vdc_mainloop
+tests/vdc_properties
 examples/reference
 *.tar.gz
 *.pb-c.h
 *.pb-c.c
 
+*.log
+*.trs
