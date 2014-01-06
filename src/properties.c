@@ -42,10 +42,10 @@ static int dsvdc_property_add(dsvdc_property_t *property, size_t index,
     }
 
     // if index is beyond the allocated area, realloc the first level array
-    if (property->n_properties < index)
+    if (property->n_properties < (index + 1))
     {
         Vdcapi__Property **properties;
-        size_t new_count = property->n_properties + index;
+        size_t new_count = (index + 1);
 
         properties = realloc(property->properties,
                              sizeof(Vdcapi__Property *) * new_count);
@@ -137,7 +137,7 @@ static int dsvdc_property_prepare_element(dsvdc_property_t *property,
     return DSVDC_OK;
 }
 
-static bool dsvdc_property_is_sane(dsvdc_property_t *property)
+bool dsvdc_property_is_sane(dsvdc_property_t *property)
 {
     if (!property)
     {
@@ -231,9 +231,12 @@ int dsvdc_property_new(const char *name, dsvdc_property_t **property,
             p->properties[i] = NULL;
         }
     }
+    else
+    {
+        p->properties = NULL;
+    }
 
     p->n_properties = hint;
-
 
     *property = p;
     return DSVDC_OK;
