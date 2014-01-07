@@ -43,6 +43,7 @@ enum
     DSVDC_ERR_TIMEOUT = -5,         /*!< vdSM did not response in time */
     DSVDC_ERR_PROPERTY_INDEX = -6,  /*!< no property under given index */
     DSVDC_ERR_INVALID_PROPERTY = -7,/*!< invalid property structure */
+    DSVDC_ERR_DISCOVERY = -8,       /*!< could not set up Avahi */
 
     /* vDC API errors as received from vdSM (synced with messages.proto) */
     DSVDC_ERR_MESSAGE_UNKNOWN = 1,
@@ -61,14 +62,17 @@ enum
  *  \param[in] port port to listen for incoming vdSM connections. Use zero
  *              for automatic port selection.
  *  \param[in] dsuid dSUID of the vDC.
- *  \param userdata arbitrary user data that will be passed as an argument
+ *  \param[in] name name of this instance for Avahi announcements, only relevant
+ *   if the library was compiled with Avahi support. Pass NULL if you want the
+ *   name to be chosen for you (default name is "digitalSTROM vDC".
+ *  \param[in] userdata arbitrary user data that will be passed as an argument
  *   to all callback functions.
  *  \param[out] handle newly allocated library handle, must be freeid using
  *              dsvdc_cleanup() when no longer needed.
  *  \return Error/success code.
  */
-int dsvdc_new(unsigned short port, const char *dsuid, void *userdata,
-              dsvdc_t **handle);
+int dsvdc_new(unsigned short port, const char *dsuid, const char *name, 
+              void *userdata, dsvdc_t **handle);
 
 /*! \brief Free library instance and all associated resources.
  *

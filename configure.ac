@@ -24,6 +24,7 @@ AC_SUBST(LIBDSVDC_LT_VERSION)
 
 
 BUILD_TESTS="yes"
+BUILD_DISCOVERY="yes"
 
 AC_ARG_ENABLE([debug],
     [AC_HELP_STRING([--enable-debug], [build debug version]) ],
@@ -42,6 +43,18 @@ AC_ARG_ENABLE([tests],
             BUILD_TESTS="no"
         elif test "x$enableval" = "xyes"; then
             BUILD_TESTS="yes"
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([autodiscovery],
+    [AC_HELP_STRING([--disable-autodiscovery],
+                    [build with autodiscovery suopport (default: auto)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_DISCOVERY="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_DISCOVERY="yes"
         fi
     ]
 )
@@ -101,7 +114,19 @@ if test "x$BUILD_TESTS" = "xyes"; then
         ])
 fi
 
+if (test "x$BUILD_DISCOVERY" = "xyes"); then
+    PKG_CHECK_MODULES([AVAHI], [avahi-client],
+        [
+            AC_DEFINE([HAVE_AVAHI], [1], [avahi support available])
+        ],
+        [
+            AC_MSG_WARN([$AVAHI_PKG_ERRORS])
+            BUILD_DISCOVERY="no"
+        ])
+fi
+
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
+AM_CONDITIONAL(BUILD_DISCOVERY, test "x$BUILD_DISCOVERY" = "xyes")
 
 AC_CONFIG_FILES([Makefile
                  messages/Makefile

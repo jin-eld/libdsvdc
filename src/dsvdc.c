@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 aizo ag, Zurich, Switzerland
+    Copyright (c) 2013, 2014 aizo ag, Zurich, Switzerland
 
     Author: Sergey 'Jin' Bostandzhyan <jin@dev.digitalstrom.org>
 
@@ -43,6 +43,10 @@
 #include "messages.pb-c.h"
 #include "log.h"
 #include "utlist.h"
+
+#ifdef HAVE_AVAHI
+#include "discovery.h"
+#endif
 
 static int dsvdc_setup_socket(dsvdc_t *handle)
 {
@@ -141,8 +145,8 @@ static int dsvdc_setup_socket(dsvdc_t *handle)
     return DSVDC_OK;
 }
 
-int dsvdc_new(unsigned short port, const char *dsuid, void *userdata,
-              dsvdc_t **handle)
+int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
+              void *userdata, dsvdc_t **handle)
 {
     *handle = NULL;
     static pthread_mutexattr_t attr;
@@ -172,6 +176,12 @@ int dsvdc_new(unsigned short port, const char *dsuid, void *userdata,
     inst->last_list_cleanup = time(NULL);
     inst->request_id = 0;
     inst->callback_userdata = userdata;
+#ifdef HAVE_AVAHI
+    inst->avahi_group = NULL;
+    inst->avahi_poll = NULL;
+    inst->avahi_client = NULL;
+    inst->avahi_name = NULL;
+#endif
     inst->vdsm_request_hello = NULL;
     inst->vdsm_send_ping = NULL;
     inst->vdsm_send_bye = NULL;
@@ -223,6 +233,16 @@ int dsvdc_new(unsigned short port, const char *dsuid, void *userdata,
     strncpy(inst->vdc_dsuid, dsuid, DSUID_LENGTH);
     inst->vdc_dsuid[DSUID_LENGTH] = '\0';
     inst->last_list_cleanup = time(NULL);
+
+#ifdef HAVE_AVAHI
+    ret = dsvdc_discovery_init(inst, name);
+    if (ret != DSVDC_OK)
+    {
+        pthread_mutex_destroy(&inst->dsvdc_handle_mutex);
+        free(inst);
+        return ret;
+    }
+#endif
 
     *handle = inst;
     return DSVDC_OK;
@@ -302,6 +322,10 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
         log("invalid (NULL) handle parameter\n");
         return;
     }
+
+#ifdef HAVE_AVAHI
+    dsvdc_discovery_work(handle);
+#endif
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     int connected = (handle->connected_fd >= 0);
@@ -597,6 +621,10 @@ void dsvdc_cleanup(dsvdc_t *handle)
     {
         return;
     }
+
+#ifdef HAVE_AVAHI
+    dsvdc_discovery_cleanup(handle);
+#endif
 
     dsvdc_cleanup_request_list(handle, false);
 

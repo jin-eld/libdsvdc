@@ -27,6 +27,12 @@
 #include <time.h>
 #include <pthread.h>
 
+#ifdef HAVE_AVAHI
+#include <avahi-client/publish.h>
+#include <avahi-common/simple-watch.h>
+#endif
+
+
 #include "dsvdc.h"
 
 /* search for free ports will start with this value */
@@ -84,6 +90,14 @@ struct dsvdc {
     cached_request_t *requests_list;
     time_t last_list_cleanup;
     uint32_t request_id;
+
+    /* announcements */
+#ifdef HAVE_AVAHI
+    AvahiEntryGroup *avahi_group;
+    AvahiSimplePoll *avahi_poll;
+    AvahiClient *avahi_client;
+    char *avahi_name;
+#endif
 
     /* callbacks */
     void *callback_userdata;

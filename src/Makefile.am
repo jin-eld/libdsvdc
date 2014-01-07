@@ -17,10 +17,19 @@ libdsvdc_la_SOURCES = \
     sockutil.h \
     utlist.h
 
+if BUILD_DISCOVERY
+
+libdsvdc_la_SOURCES += \
+    discovery.h \
+    discovery.c
+
+endif
+
 libdsvdc_la_CFLAGS = \
 	-I$(top_builddir)/messages \
     $(PROTOBUFC_CFLAGS) \
-	$(PTHREAD_CFLAGS)
+    $(AVAHI_CFLAGS) \
+    $(PTHREAD_CFLAGS)
 
 libdsvdc_la_LDFLAGS = \
     -version-info $(LIBDSVDC_LT_VERSION)
@@ -30,4 +39,6 @@ libdsvdc_la_LIBADD = \
 
 libdsvdc_la_LIBS = \
     $(PROTOBUFC_LIBS) \
-	$(PTHREAD_LIBS)
+    $(AVAHI_LIBS) \
+    $(PTHREAD_LIBS)
+

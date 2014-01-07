@@ -132,7 +132,7 @@ int main(int argc, char **argv)
     dsvdc_t *handle = NULL;
 
     /* initialize new library instance */
-    if (dsvdc_new(0, g_vdc_dsuid, &ready, &handle) != DSVDC_OK)
+    if (dsvdc_new(0, g_vdc_dsuid, "Example vDC", &ready, &handle) != DSVDC_OK)
     {
         fprintf(stderr, "dsvdc_new() initialization failed\n");
         return EXIT_FAILURE;
