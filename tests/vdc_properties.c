@@ -223,21 +223,6 @@ START_TEST(create_valid_property)
 }
 END_TEST
 
-START_TEST(create_empty_property)
-{
-    dsvdc_property_t *property = NULL;
-    
-    int ret = dsvdc_property_new("testprop", &property, 0);
-    ck_assert_msg(ret == DSVDC_OK, "dsvdc_property_new() returned %d", ret);
-    ck_assert_msg(property != NULL, "dsvdc_property_new() invalid property");
-
-    ck_assert_msg(dsvdc_property_is_sane(property) == false,
-                  "empty property can not be valid");
-
-    dsvdc_property_free(property);
-}
-END_TEST
-
 START_TEST(index_hole_property)
 {
     dsvdc_property_t *property = NULL;
@@ -311,20 +296,20 @@ Suite *dsvdc_suite()
     Suite *s = suite_create("dSvDC Properties");
     TCase *tc_valid_property = tcase_create("valid property");
     tcase_add_test(tc_valid_property, create_valid_property);
-
-    TCase *tc_empty_property = tcase_create("empty property");
-    tcase_add_test(tc_empty_property, create_empty_property);
+    suite_add_tcase(s, tc_valid_property);
 
     TCase *tc_index_hole_property = tcase_create("index hole property");
     tcase_add_test(tc_index_hole_property, index_hole_property);
+    suite_add_tcase(s, tc_index_hole_property);
 
     TCase *tc_empty_el_property = tcase_create("empty elements property");
     tcase_add_test(tc_empty_el_property, empty_elements_property);
+    suite_add_tcase(s, tc_empty_el_property);
 
     TCase *tc_el_length_mismatch = tcase_create("element length mismatch");
     tcase_add_test(tc_el_length_mismatch, element_length_mismatch);
+    suite_add_tcase(s, tc_el_length_mismatch);
 
-    suite_add_tcase(s, tc_valid_property);
     return s;
 }
 

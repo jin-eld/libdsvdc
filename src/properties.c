@@ -144,12 +144,6 @@ bool dsvdc_property_is_sane(dsvdc_property_t *property)
         return false;
     }
 
-    if (property->n_properties == 0) // empty property makes no sense
-    {
-        log("empty properties on first level\n");
-        return false;
-    }
-
     // First level must have no holes, each first level properties must
     // have the same number of elements. More extensive checks, like
     // structure of the element arrays (each property must have same
