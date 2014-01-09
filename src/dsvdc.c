@@ -262,18 +262,26 @@ static void dsvdc_cleanup_request_list(dsvdc_t *handle, bool connected)
         return;
     }
 
-    LL_FOREACH(handle->requests_list, request)
+    if (handle->requests_list)
     {
-        if (!connected ||
-            (difftime(now, request->timestamp) > DEFAULT_VDSM_MSG_TIMEOUT))
+        LL_FOREACH(handle->requests_list, request)
         {
-            log("removing request with id %u from list...\n",
-                 request->message_id);
+            if (!handle->requests_list)
+            {
+                break;
+            }
 
-            LL_DELETE(handle->requests_list, request);
-            request->callback(handle, code, request->arg,
-                              handle->callback_userdata);
-            free(request);
+            if (!connected ||
+                (difftime(now, request->timestamp) > DEFAULT_VDSM_MSG_TIMEOUT))
+            {
+                log("removing request with id %u from list...\n",
+                     request->message_id);
+
+                LL_DELETE(handle->requests_list, request);
+                request->callback(handle, code, request->arg,
+                                  handle->callback_userdata);
+                free(request);
+            }
         }
     }
     handle->last_list_cleanup = time(NULL);
