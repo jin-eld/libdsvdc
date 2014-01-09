@@ -859,9 +859,11 @@ void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
             dsvdc_process_ping(handle, msg);
             break;
 
-        case VDCAPI__TYPE__VDSM_SEND_SET_PROPERTY:
-            log("received VDSM_SEND_SET_PROPERTY\n");
+        case VDCAPI__TYPE__VDSM_REQUEST_SET_PROPERTY:
+            dsvdc_send_error_message(handle,
+                VDCAPI__RESULT_CODE__ERR_NOT_IMPLEMENTED, msg->message_id);
             break;
+
         case VDCAPI__TYPE__VDSM_SEND_REMOVE:
         {
             log("received VDSM_SEND_REMOVE\n");
