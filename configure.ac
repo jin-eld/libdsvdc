@@ -26,6 +26,23 @@ AC_SUBST(LIBDSVDC_LT_VERSION)
 BUILD_TESTS="yes"
 BUILD_DISCOVERY="yes"
 
+DEPSEARCH=
+AC_ARG_WITH(dependency-search,
+    AC_HELP_STRING([--with-dependency-search=DIR],
+                   [search for dependencies in DIR, i.e. look for libraries in
+                    DIR/lib and for headers in DIR/include]),
+    [
+        DEPSEARCH="$withval"
+    ]
+)
+if test -n "$DEPSEARCH"; then
+    CFLAGS="$CFLAGS -I$DEPSEARCH/include"
+    CPPFLAGS="$CPPFLAGS -I$DEPSEARCH/include"
+    LDFLAGS="$LDFLAGS -L$DEPSEARCH/lib"
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$DEPSEARCH/lib/pkgconfig
+    export PATH=$DEPSEARCH/bin:$PATH
+fi
+
 AC_ARG_ENABLE([debug],
     [AC_HELP_STRING([--enable-debug], [build debug version]) ],
     [
@@ -94,7 +111,15 @@ fi
 
 PKG_CHECK_MODULES([PROTOBUFC], [libprotobuf-c], [],
     [
-        AC_MSG_ERROR([$PROTBUFC_PKG_ERRORS])
+        AC_CHECK_HEADERS([google/protobuf-c/protobuf-c.h], [],
+            [
+                AC_MSG_ERROR([coult not find protobuf-c headers])
+            ])
+
+        AC_CHECK_LIB([protobuf-c], [protobuf_c_message_unpack], [],
+            [
+                AC_MSG_ERROR([coult not find protobuf-c library])
+            ])
     ])
 
 AC_PATH_PROG(PROTOC, protoc-c, "")
