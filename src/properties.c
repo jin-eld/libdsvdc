@@ -182,8 +182,8 @@ bool dsvdc_property_is_sane(dsvdc_property_t *property)
 
 /* public interface */
 
-int dsvdc_property_new(const char *name, dsvdc_property_t **property,
-                       size_t hint)
+int dsvdc_property_new(const char *name, size_t hint,
+                       dsvdc_property_t **property)
 {
     *property = NULL;
 

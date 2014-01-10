@@ -39,7 +39,7 @@ START_TEST(create_valid_property)
     dsvdc_property_t *property = NULL;
     size_t i;
 
-    int ret = dsvdc_property_new("testprop", &property, 0);
+    int ret = dsvdc_property_new("testprop", 0, &property);
     ck_assert_msg(ret == DSVDC_OK, "dsvdc_property_new() returned %d", ret);
     ck_assert_msg(property != NULL, "dsvdc_property_new() invalid property");
 
@@ -227,7 +227,7 @@ START_TEST(index_hole_property)
 {
     dsvdc_property_t *property = NULL;
     
-    int ret = dsvdc_property_new("testprop", &property, 0);
+    int ret = dsvdc_property_new("testprop", 0, &property);
     ck_assert_msg(ret == DSVDC_OK, "dsvdc_property_new() returned %d", ret);
     ck_assert_msg(property != NULL, "dsvdc_property_new() invalid property");
 
@@ -252,7 +252,7 @@ START_TEST(empty_elements_property)
 {
     dsvdc_property_t *property = NULL;
     
-    int ret = dsvdc_property_new("testprop", &property, 2);
+    int ret = dsvdc_property_new("testprop", 2, &property);
     ck_assert_msg(ret == DSVDC_OK, "dsvdc_property_new() returned %d", ret);
     ck_assert_msg(property != NULL, "dsvdc_property_new() invalid property");
 
@@ -268,7 +268,7 @@ START_TEST(element_length_mismatch)
 {
     dsvdc_property_t *property = NULL;
     
-    int ret = dsvdc_property_new("testprop", &property, 2);
+    int ret = dsvdc_property_new("testprop", 2, &property);
     ck_assert_msg(ret == DSVDC_OK, "dsvdc_property_new() returned %d", ret);
     ck_assert_msg(property != NULL, "dsvdc_property_new() invalid property");
 

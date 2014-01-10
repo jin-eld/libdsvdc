@@ -437,8 +437,8 @@ int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, uint32_t offset,
  * \param[out] property the newly allocated property.
  * \return error code, indicating if the property was allocated.
  */
-int dsvdc_property_new(const char *name, dsvdc_property_t **property,
-                       size_t hint);
+int dsvdc_property_new(const char *name, size_t hint,
+                       dsvdc_property_t **property);
 
 /*! \brief Free previously allocated property.
  *
