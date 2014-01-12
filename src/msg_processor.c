@@ -764,7 +764,7 @@ static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
     if (handle->vdsm_request_get_property)
     {
         dsvdc_property_t *property = NULL;
-        int ret = dsvdc_property_new(msg->vdsm_request_get_property->name, 1,
+        int ret = dsvdc_property_new(msg->vdsm_request_get_property->name, 0,
                                      &property);
         if (ret == DSVDC_OK)
         {
