@@ -48,6 +48,167 @@
 #include "discovery.h"
 #endif
 
+
+static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
+                              void *userdata, dsvdc_t *inst)
+{
+    static pthread_mutexattr_t attr;
+
+    /* init members */
+    memset(inst->vdsm_dsuid, 0, sizeof(inst->vdsm_dsuid));
+    memset(inst->vdc_dsuid, 0, sizeof(inst->vdc_dsuid));
+    inst->port = port;
+    inst->listen_fd = -1;
+    inst->connected_fd = -1;
+    inst->vdsm_push_uri = NULL;
+    inst->requests_list = NULL;
+    inst->last_list_cleanup = time(NULL);
+    inst->request_id = 0;
+    inst->callback_userdata = userdata;
+#ifdef HAVE_AVAHI
+    inst->avahi_group = NULL;
+    inst->avahi_poll = NULL;
+    inst->avahi_client = NULL;
+    inst->avahi_name = NULL;
+#endif
+    inst->vdsm_request_hello = NULL;
+    inst->vdsm_send_ping = NULL;
+    inst->vdsm_send_bye = NULL;
+    inst->vdsm_send_remove = NULL;
+    inst->vdsm_send_call_scene = NULL;
+    inst->vdsm_send_save_scene = NULL;
+    inst->vdsm_send_undo_scene = NULL;
+    inst->vdsm_send_set_local_prio = NULL;
+    inst->vdsm_send_call_min_scene = NULL;
+    inst->vdsm_send_identify = NULL;
+    inst->vdsm_send_set_control_value = NULL;
+    inst->vdsm_request_get_property = NULL;
+
+    if (pthread_mutexattr_init(&attr) != 0)
+    {
+        log("could not initialize dsvdc_handle_mutex attribute: %s\n",
+            strerror(errno));
+        free(inst);
+        return DSVDC_ERR_OUT_OF_MEMORY ;
+    }
+
+    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0)
+    {
+        log("could not set dsvdc_handle_mutex attribute: %s\n",
+            strerror(errno));
+        pthread_mutexattr_destroy(&attr);
+        free(inst);
+        return DSVDC_ERR_OUT_OF_MEMORY ;
+    }
+
+    if (pthread_mutex_init(&inst->dsvdc_handle_mutex, &attr) != 0)
+    {
+        log("could not initialize dsvdc_handle_mutex: %s\n", strerror(errno));
+        pthread_mutexattr_destroy(&attr);
+        free(inst);
+        return DSVDC_ERR_OUT_OF_MEMORY ;
+    }
+
+    pthread_mutexattr_destroy(&attr);
+
+    strncpy(inst->vdc_dsuid, dsuid, DSUID_LENGTH);
+    inst->vdc_dsuid[DSUID_LENGTH] = '\0';
+    inst->last_list_cleanup = time(NULL);
+
+    return DSVDC_OK;
+}
+
+/* walk the requests list and remove obsolete requests */
+static void dsvdc_cleanup_request_list(dsvdc_t *handle, bool connected)
+{
+    cached_request_t *request = NULL;
+    int code;
+
+    if (connected)
+    {
+        code = DSVDC_ERR_TIMEOUT;
+    }
+    else
+    {
+        code = DSVDC_ERR_NOT_CONNECTED;
+    }
+
+    time_t now = time(NULL);
+
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    if (connected &&
+        (difftime(now, handle->last_list_cleanup) < REQLIST_CHECK_INTERVAL))
+    {
+        pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+        return;
+    }
+
+    if (handle->requests_list)
+    {
+        LL_FOREACH(handle->requests_list, request)
+        {
+            if (!handle->requests_list)
+            {
+                break;
+            }
+
+            if (!connected ||
+                (difftime(now, request->timestamp) > DEFAULT_VDSM_MSG_TIMEOUT))
+            {
+                log("removing request with id %u from list...\n",
+                     request->message_id);
+
+                LL_DELETE(handle->requests_list, request);
+                request->callback(handle, code, request->arg,
+                                  handle->callback_userdata);
+                free(request);
+            }
+        }
+    }
+    handle->last_list_cleanup = time(NULL);
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
+static void dsvdc_cleanup_handle(dsvdc_t *handle)
+{
+    dsvdc_cleanup_request_list(handle, false);
+
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+
+    if (handle->listen_fd > -1)
+    {
+        close(handle->listen_fd);
+        handle->listen_fd = -1;
+    }
+
+    if (handle->connected_fd > -1)
+    {
+        close(handle->connected_fd);
+        handle->connected_fd = -1;
+    }
+
+    handle->vdsm_request_hello = NULL;
+    handle->vdsm_request_get_property = NULL;
+    handle->vdsm_send_ping = NULL;
+    handle->vdsm_send_bye = NULL;
+    handle->vdsm_send_remove = NULL;
+    handle->vdsm_send_call_scene = NULL;
+    handle->vdsm_send_save_scene = NULL;
+    handle->vdsm_send_undo_scene = NULL;
+    handle->vdsm_send_set_local_prio = NULL;
+    handle->vdsm_send_call_min_scene = NULL;
+    handle->vdsm_send_identify = NULL;
+    handle->vdsm_send_set_control_value = NULL;
+    handle->callback_userdata = NULL;
+
+    if (handle->vdsm_push_uri)
+    {
+        free(handle->vdsm_push_uri);
+    }
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+    pthread_mutex_destroy(&handle->dsvdc_handle_mutex);
+}
+
 static int dsvdc_setup_socket(dsvdc_t *handle)
 {
     struct sockaddr_in addr;
@@ -149,7 +310,6 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
               void *userdata, dsvdc_t **handle)
 {
     *handle = NULL;
-    static pthread_mutexattr_t attr;
 
 
     if (dsuid == NULL)
@@ -165,64 +325,7 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
         return DSVDC_ERR_OUT_OF_MEMORY;
     }
 
-    /* init members */
-    memset(inst->vdsm_dsuid, 0, sizeof(inst->vdsm_dsuid));
-    memset(inst->vdc_dsuid, 0, sizeof(inst->vdc_dsuid));
-    inst->port = port;
-    inst->listen_fd = -1;
-    inst->connected_fd = -1;
-    inst->vdsm_push_uri = NULL;
-    inst->requests_list = NULL;
-    inst->last_list_cleanup = time(NULL);
-    inst->request_id = 0;
-    inst->callback_userdata = userdata;
-#ifdef HAVE_AVAHI
-    inst->avahi_group = NULL;
-    inst->avahi_poll = NULL;
-    inst->avahi_client = NULL;
-    inst->avahi_name = NULL;
-#endif
-    inst->vdsm_request_hello = NULL;
-    inst->vdsm_send_ping = NULL;
-    inst->vdsm_send_bye = NULL;
-    inst->vdsm_send_remove = NULL;
-    inst->vdsm_send_call_scene = NULL;
-    inst->vdsm_send_save_scene = NULL;
-    inst->vdsm_send_undo_scene = NULL;
-    inst->vdsm_send_set_local_prio = NULL;
-    inst->vdsm_send_call_min_scene = NULL;
-    inst->vdsm_send_identify = NULL;
-    inst->vdsm_send_set_control_value = NULL;
-    inst->vdsm_request_get_property = NULL;
-
-    if (pthread_mutexattr_init(&attr) != 0)
-    {
-        log("could not initialize dsvdc_handle_mutex attribute: %s\n",
-            strerror(errno));
-        free(inst);
-        return DSVDC_ERR_OUT_OF_MEMORY ;
-    }
-
-    if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0)
-    {
-        log("could not set dsvdc_handle_mutex attribute: %s\n",
-            strerror(errno));
-        pthread_mutexattr_destroy(&attr);
-        free(inst);
-        return DSVDC_ERR_OUT_OF_MEMORY ;
-    }
-
-    if (pthread_mutex_init(&inst->dsvdc_handle_mutex, &attr) != 0)
-    {
-        log("could not initialize dsvdc_handle_mutex: %s\n", strerror(errno));
-        pthread_mutexattr_destroy(&attr);
-        free(inst);
-        return DSVDC_ERR_OUT_OF_MEMORY ;
-    }
-        
-    pthread_mutexattr_destroy(&attr);
-
-    int ret = dsvdc_setup_socket(inst);
+    int ret = dsvdc_setup_handle(port, dsuid, userdata, inst);
     if (ret != DSVDC_OK)
     {
         pthread_mutex_destroy(&inst->dsvdc_handle_mutex);
@@ -230,9 +333,13 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
         return ret;
     }
 
-    strncpy(inst->vdc_dsuid, dsuid, DSUID_LENGTH);
-    inst->vdc_dsuid[DSUID_LENGTH] = '\0';
-    inst->last_list_cleanup = time(NULL);
+    ret = dsvdc_setup_socket(inst);
+    if (ret != DSVDC_OK)
+    {
+        pthread_mutex_destroy(&inst->dsvdc_handle_mutex);
+        free(inst);
+        return ret;
+    }
 
 #ifdef HAVE_AVAHI
     ret = dsvdc_discovery_init(inst, name);
@@ -255,57 +362,6 @@ bool dsvdc_is_connected(dsvdc_t *handle)
     connected = (handle->connected_fd > -1);
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
     return connected;
-}
-
-/* walk the requests list and remove obsolete requests */
-static void dsvdc_cleanup_request_list(dsvdc_t *handle, bool connected)
-{
-    cached_request_t *request = NULL;
-    int code;
-
-    if (connected)
-    {
-        code = DSVDC_ERR_TIMEOUT;
-    }
-    else
-    {
-        code = DSVDC_ERR_NOT_CONNECTED;
-    }
-
-    time_t now = time(NULL);
-
-    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    if (connected &&
-        (difftime(now, handle->last_list_cleanup) < REQLIST_CHECK_INTERVAL))
-    {
-        pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
-        return;
-    }
-
-    if (handle->requests_list)
-    {
-        LL_FOREACH(handle->requests_list, request)
-        {
-            if (!handle->requests_list)
-            {
-                break;
-            }
-
-            if (!connected ||
-                (difftime(now, request->timestamp) > DEFAULT_VDSM_MSG_TIMEOUT))
-            {
-                log("removing request with id %u from list...\n",
-                     request->message_id);
-
-                LL_DELETE(handle->requests_list, request);
-                request->callback(handle, code, request->arg,
-                                  handle->callback_userdata);
-                free(request);
-            }
-        }
-    }
-    handle->last_list_cleanup = time(NULL);
-    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
 void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
@@ -391,11 +447,18 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
                 log("vDC is already connected to the vdSM, "
                     "rejecting new incoming connection.\n");
                 dsvdc_t fake_handle;
-                fake_handle.connected_fd = new_fd;
-                dsvdc_send_error_message(&fake_handle,
-                        VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
-                        RESERVED_REQUEST_ID);
-                close(new_fd);
+                if (dsvdc_setup_handle(handle->port, handle->vdc_dsuid,
+                    NULL, &fake_handle) == DSVDC_OK)
+                {
+
+                    fake_handle.connected_fd = new_fd;
+                    dsvdc_send_error_message(&fake_handle,
+                            VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                            RESERVED_REQUEST_ID);
+                    dsvdc_cleanup_handle(&fake_handle);
+                } else {
+                    close(new_fd);
+                }
             }
             else
             {
@@ -626,42 +689,8 @@ void dsvdc_cleanup(dsvdc_t *handle)
     dsvdc_discovery_cleanup(handle);
 #endif
 
-    dsvdc_cleanup_request_list(handle, false);
+    dsvdc_cleanup_handle(handle);
 
-    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-
-    if (handle->listen_fd > -1)
-    {
-        close(handle->listen_fd);
-        handle->listen_fd = -1;
-    }
-
-    if (handle->connected_fd > -1)
-    {
-        close(handle->connected_fd);
-        handle->connected_fd = -1;
-    }
-
-    handle->vdsm_request_hello = NULL;
-    handle->vdsm_request_get_property = NULL;
-    handle->vdsm_send_ping = NULL;
-    handle->vdsm_send_bye = NULL;
-    handle->vdsm_send_remove = NULL;
-    handle->vdsm_send_call_scene = NULL;
-    handle->vdsm_send_save_scene = NULL;
-    handle->vdsm_send_undo_scene = NULL;
-    handle->vdsm_send_set_local_prio = NULL;
-    handle->vdsm_send_call_min_scene = NULL;
-    handle->vdsm_send_identify = NULL;
-    handle->vdsm_send_set_control_value = NULL;
-    handle->callback_userdata = NULL;
-
-    if (handle->vdsm_push_uri)
-    {
-        free(handle->vdsm_push_uri);
-    }
-    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
-    pthread_mutex_destroy(&handle->dsvdc_handle_mutex);
     free(handle);
 }
 
