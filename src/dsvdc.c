@@ -35,6 +35,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <limits.h>
+#include <utlist.h>
 
 #include "common.h"
 #include "dsvdc.h"
@@ -42,7 +43,6 @@
 #include "msg_processor.h"
 #include "messages.pb-c.h"
 #include "log.h"
-#include "utlist.h"
 
 #ifdef HAVE_AVAHI
 #include "discovery.h"

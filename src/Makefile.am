@@ -14,8 +14,7 @@ libdsvdc_la_SOURCES = \
     properties.h \
     properties.c \
     sockutil.c \
-    sockutil.h \
-    utlist.h
+    sockutil.h
 
 if BUILD_DISCOVERY
 

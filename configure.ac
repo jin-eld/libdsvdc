@@ -88,6 +88,9 @@ AC_PROG_LIBTOOL
 AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h sys/socket.h stdlib.h stdint.h string.h unistd.h time.h],
         [], [AC_MSG_ERROR([required system header not found])])
 
+AC_CHECK_HEADER([utlist.h], [],
+        [AC_MSG_ERROR([required header utlist.h not found])])
+
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_TYPE_UINT8_T

@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <utlist.h>
 #include <errno.h>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -33,7 +34,6 @@
 #include "msg_processor.h"
 #include "sockutil.h"
 #include "log.h"
-#include "utlist.h"
 #include "properties.h"
 
 int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
