@@ -44,8 +44,8 @@
 /* Currently known and supported API version */
 #define SUPPORTED_API_VERSION   1
 
-/* length of a dSUID in bytes (not containing NULL terminator) */
-#define DSUID_LENGTH            17
+/* length of a dSUID as string (not containing NULL terminator) */
+#define DSUID_LENGTH            24
 
 /* max time to wait for a socket to become ready when sending a messsage */
 #define SOCKET_WRITE_TIMEOUT    2 /* seconds */
