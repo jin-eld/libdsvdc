@@ -52,7 +52,7 @@
 static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
                               void *userdata, dsvdc_t *inst)
 {
-    static pthread_mutexattr_t attr;
+    pthread_mutexattr_t attr;
 
     /* init members */
     memset(inst->vdsm_dsuid, 0, sizeof(inst->vdsm_dsuid));
