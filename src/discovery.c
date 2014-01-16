@@ -26,6 +26,10 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <avahi-client/publish.h>
 
 #include <avahi-common/error.h>
@@ -137,13 +141,26 @@ static void dsvdc_avahi_create_services(dsvdc_t *handle, AvahiClient *client) {
     if (avahi_entry_group_is_empty(handle->avahi_group))
     {
         log("Adding service '%s'\n", handle->avahi_name);
+        const char *key = "dSUID=";
+        size_t len = strlen(key) + strlen(handle->vdc_dsuid) + 1;
+        char *txt = malloc(len);
+        if (txt)
+        {
+            snprintf(txt, len, "%s%s", key, handle->vdc_dsuid);
+        }
 
         ret = avahi_entry_group_add_service(handle->avahi_group,
                                             AVAHI_IF_UNSPEC,
                                             AVAHI_PROTO_INET, 0,
                                             handle->avahi_name,
                                             "_ds-vdc._tcp", NULL,
-                                            NULL, handle->port, NULL); 
+                                            NULL, handle->port, txt,
+                                            NULL);
+        if (txt)
+        {
+            free(txt);
+        }
+
         if (ret < 0)
         {
             if (ret == AVAHI_ERR_COLLISION)
