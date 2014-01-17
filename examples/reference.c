@@ -77,6 +77,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
                        uint32_t offset, uint32_t count,
                        dsvdc_property_t *property, void *userdata)
 {
+    int i;
     printf("received get property callback for device %s\n", dsuid);
     if (strcmp(name, "buttonInputSettings") == 0)
     {
@@ -94,6 +95,14 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
     else if (strcmp(name, "name") == 0)
     {
         dsvdc_property_add_string(property, 0, "name", "libdSvDC");
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "isMember") == 0)
+    {
+        for (i = 0; i < 64; i++)
+        {
+            dsvdc_property_add_bool(property, i, "isMember", (i == 1));
+        }
         dsvdc_send_property_response(handle, property);
     }
     else
