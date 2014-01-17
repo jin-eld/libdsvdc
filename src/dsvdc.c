@@ -122,6 +122,8 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
 static void dsvdc_cleanup_request_list(dsvdc_t *handle, bool connected)
 {
     cached_request_t *request = NULL;
+    cached_request_t *tmp = NULL;
+
     int code;
 
     if (connected)
@@ -145,13 +147,8 @@ static void dsvdc_cleanup_request_list(dsvdc_t *handle, bool connected)
 
     if (handle->requests_list)
     {
-        LL_FOREACH(handle->requests_list, request)
+        LL_FOREACH_SAFE(handle->requests_list, request, tmp)
         {
-            if (!handle->requests_list)
-            {
-                break;
-            }
-
             if (!connected ||
                 (difftime(now, request->timestamp) > DEFAULT_VDSM_MSG_TIMEOUT))
             {

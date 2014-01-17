@@ -785,11 +785,12 @@ static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
 
 static cached_request_t *dsvdc_get_cached_request(dsvdc_t *handle, uint32_t id)
 {
-    cached_request_t *request;
+    cached_request_t *request = NULL;
+    cached_request_t *tmp = NULL;
 
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    LL_FOREACH(handle->requests_list, request)
+    LL_FOREACH_SAFE(handle->requests_list, request, tmp)
     {
         if (request->message_id == id)
         {
