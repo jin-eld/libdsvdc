@@ -27,12 +27,13 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 
 #include "dsvdc.h"
 
 static int g_shutdown_flag = 0;
-static const char *g_vdc_dsuid = "3504175FE0000000BC514CBE";
-static const char *g_dev_dsuid = "3504175FE000000098BD8E80";
+static char g_vdc_dsuid[25] = { "3504175FE0000000BC514CBE" };
+static char g_dev_dsuid[25] = { "3504175FE000000098BD8E80" };
 
 void signal_handler(int signum)
 {
@@ -111,6 +112,12 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
     }
 }
 
+unsigned int random_in_range(unsigned int min, unsigned int max)
+{
+    double scaled = (double)random()/RAND_MAX;
+    return (max - min + 1) * scaled + min;
+}
+
 int main(int argc, char **argv)
 {
     struct sigaction action;
@@ -136,7 +143,16 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    printf("libdSvDC example test program, press Ctrl-C to quit\n");
+
+    /* randomize dsuid's so that we can run more than one example on the
+       same machine */
+    srandom(time(NULL));
+    snprintf(g_vdc_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
+             random_in_range(100,999));
+    snprintf(g_dev_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
+             random_in_range(100,999));
+    printf("libdSvDC/%s example test program, press Ctrl-C to quit\n",
+           g_vdc_dsuid);
 
     dsvdc_t *handle = NULL;
 

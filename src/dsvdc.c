@@ -480,7 +480,8 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
             close(handle->connected_fd);
             handle->connected_fd = -1;
             log("could not read incoming message length or "
-                "message exceeds allowed size, resetting connection.\n");
+                "message (%u) exceeds allowed size, resetting connection.\n",
+                ntohs(size));
             pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
             return;
         }
