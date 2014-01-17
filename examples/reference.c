@@ -201,7 +201,7 @@ int main(int argc, char **argv)
             }
         }
     }
-
+    dsvdc_device_vanished(handle, g_dev_dsuid);
     dsvdc_cleanup(handle);
 
     return EXIT_SUCCESS;
