@@ -388,6 +388,19 @@ static void dsvdc_process_bye(dsvdc_t *handle, Vdcapi__Message *msg)
 {
     log("received VDSM_SEND_BYE\n");
 
+    if (!msg->vdsm_send_bye)
+    {
+        log("received VDSM_SEND_BYE message type, but data is missing!\n");
+        return;
+    }
+
+    if (!msg->vdsm_send_bye->dsuid)
+    {
+        log("received VDSM_SEND_BYE: missing dSUID!\n");
+        return;
+    }
+
+
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     if (handle->connected_fd >= 0)
     {
@@ -397,7 +410,8 @@ static void dsvdc_process_bye(dsvdc_t *handle, Vdcapi__Message *msg)
 
     if (handle->vdsm_send_bye)
     {
-        handle->vdsm_send_bye(handle, handle->callback_userdata);
+        handle->vdsm_send_bye(handle, msg->vdsm_send_bye->dsuid,
+                              handle->callback_userdata);
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }

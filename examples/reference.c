@@ -71,10 +71,10 @@ static void announce_cb(dsvdc_t *handle, int code, void *arg, void *userdata)
     printf("got code %d to announcement of device %s\n", code, (char *)arg);
 }
 
-static void bye_cb(dsvdc_t *handle, void *userdata)
+static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     (void)handle;
-    printf("received bye, vdSM terminated our session\n");
+    printf("received bye, vdSM %s terminated our session\n", dsuid);
     bool *ready = (bool *)userdata;
     *ready = false;
 }

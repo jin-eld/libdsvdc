@@ -128,14 +128,15 @@ void dsvdc_set_hello_callback(dsvdc_t *handle,
  * and you should not attempt to send anything to the vdSM.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, void *userdata) callback function
+ * \param void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata)
+ * callback function
  *
  * The callback parameters are:
  * \param[in] handle dsvdc handle that was returned by dsvdc_new().
  * \param[in] userdata userdata pointer that was passed to dsvdc_new().
  */
 void dsvdc_set_bye_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, void *userdata));
+        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
 
 /*! \brief Register "remove" callback.
  *

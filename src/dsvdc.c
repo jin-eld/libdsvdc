@@ -551,7 +551,8 @@ void dsvdc_set_ping_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_bye_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, void *userdata))
+                        void (*function)(dsvdc_t *handle, const char *dsuid,
+                                         void *userdata))
 {
     if (!handle)
     {
