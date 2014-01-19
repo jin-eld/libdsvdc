@@ -156,6 +156,8 @@ fi
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_DISCOVERY, test "x$BUILD_DISCOVERY" = "xyes")
 
+CFLAGS="$CFLAGS -Wall -Wextra"
+
 AC_CONFIG_FILES([Makefile
                  messages/Makefile
                  src/Makefile
