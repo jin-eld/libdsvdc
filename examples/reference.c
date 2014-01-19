@@ -95,6 +95,15 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
         dsvdc_property_add_uint(property, 0, "mode", 0);
         dsvdc_send_property_response(handle, property);
     }
+    else if (strcmp(name, "buttonInputDescriptions") == 0)
+    {
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "primaryGroup") == 0)
+    {
+        dsvdc_property_add_uint(property, 0, "primaryGroup", 1);
+        dsvdc_send_property_response(handle, property);
+    }
     else if (strcmp(name, "outputSettings") == 0)
     {
         dsvdc_property_add_uint(property, 0, "group", 1);
@@ -151,7 +160,6 @@ int main()
         return EXIT_FAILURE;
     }
 
-
     /* randomize dsuid's so that we can run more than one example on the
        same machine */
     srandom(time(NULL));
@@ -159,6 +167,7 @@ int main()
              random_in_range(100,999));
     snprintf(g_dev_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
              random_in_range(100,999));
+
     printf("libdSvDC/%s example test program, press Ctrl-C to quit\n",
            g_vdc_dsuid);
 
