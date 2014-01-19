@@ -354,7 +354,7 @@ static void dsvdc_process_remove(dsvdc_t *handle, Vdcapi__Message *msg)
 
     if (!msg->vdsm_send_remove->dsuid)
     {
-        log("received VDSM_SEND_PING: missing dSUID!\n");
+        log("received VDSM_SEND_REMOVE: missing dSUID!\n");
         if (msg->has_message_id)
         {
             dsvdc_send_error_message(handle,
