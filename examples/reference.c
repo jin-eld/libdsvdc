@@ -45,6 +45,7 @@ void signal_handler(int signum)
 
 static void hello_cb(dsvdc_t *handle, void *userdata)
 {
+    (void)handle;
     printf("Hello callback triggered, we are ready\n");
     bool *ready = (bool *)userdata;
     *ready = true;
@@ -53,6 +54,7 @@ static void hello_cb(dsvdc_t *handle, void *userdata)
 static void ping_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     int ret;
+    (void)userdata;
     printf("received ping for device %s\n", dsuid);
     if ((strcmp(dsuid, g_vdc_dsuid) == 0) ||
         (strcmp(dsuid, g_dev_dsuid) == 0))
@@ -64,11 +66,14 @@ static void ping_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 
 static void announce_cb(dsvdc_t *handle, int code, void *arg, void *userdata)
 {
+    (void)handle;
+    (void)userdata;
     printf("got code %d to announcement of device %s\n", code, (char *)arg);
 }
 
 static void bye_cb(dsvdc_t *handle, void *userdata)
 {
+    (void)handle;
     printf("received bye, vdSM terminated our session\n");
     bool *ready = (bool *)userdata;
     *ready = false;
@@ -79,6 +84,9 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
                        dsvdc_property_t *property, void *userdata)
 {
     int i;
+    (void)offset;
+    (void)count;
+    (void)userdata;
     printf("received get property callback for device %s\n", dsuid);
     if (strcmp(name, "buttonInputSettings") == 0)
     {
@@ -118,7 +126,7 @@ unsigned int random_in_range(unsigned int min, unsigned int max)
     return (max - min + 1) * scaled + min;
 }
 
-int main(int argc, char **argv)
+int main()
 {
     struct sigaction action;
 
