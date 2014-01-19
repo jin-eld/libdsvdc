@@ -67,8 +67,9 @@ int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
         return DSVDC_ERR_SOCKET;
     }
 
-    if (sockwrite(handle->connected_fd, (unsigned char *)msg_buf, msg_len,
-                  SOCKET_WRITE_TIMEOUT) != msg_len)
+    int written = sockwrite(handle->connected_fd, (unsigned char *)msg_buf,
+                            msg_len, SOCKET_WRITE_TIMEOUT);
+    if ((written < 0) || ((size_t)written != msg_len))
     {
         log("could not send message to vdSM\n");
         free(msg_buf);
