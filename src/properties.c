@@ -487,8 +487,8 @@ int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property)
     return ret;
 }
 
-int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, uint32_t offset,
-                        dsvdc_property_t *property)
+int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
+                        uint32_t offset, dsvdc_property_t *property)
 {
     if (!handle)
     {
@@ -504,6 +504,10 @@ int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, uint32_t offset,
 
     Vdcapi__Message msg = VDCAPI__MESSAGE__INIT;
     Vdcapi__VdcSendPushProperty submsg = VDCAPI__VDC__SEND_PUSH_PROPERTY__INIT;
+    submsg.dsuid = (char *)dsuid;
+    submsg.name = (char *)name;
+    submsg.offset = offset;
+    submsg.has_offset = 1;
 
     submsg.n_properties = property->n_properties;
     submsg.properties = property->properties;

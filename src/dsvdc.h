@@ -387,13 +387,14 @@ int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property);
  * the need for the vdSM to poll values.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param name property name.
  * \param offset property offset in the target first level array.
  * \param property property which will be sent, this property can be reused
  * and thus will not be freed by this function. If you do not need your property
  * anymore you must free it using dsvdc_property_free().
  */
-int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, uint32_t offset,
-                        dsvdc_property_t *property);
+int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
+                        uint32_t offset, dsvdc_property_t *property);
 /*
  * ****************************************************************************
  * Property helper functions.
