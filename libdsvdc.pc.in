@@ -8,5 +8,5 @@ Description: digitalSTROM vDC Interface Library
 Requires: protobuf-c
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ldsvdc @PROTOBUFC_LIBS@ @AVAHI_LIBS@ @PTHREAD_LIBS@
-Cflags: -I${includedir} @PROTOBUFC_CFLAGS@ @AVAHI_CFLAGS@ @PTHREAD_CFLAGS@
+Cflags: -I${includedir}
 
