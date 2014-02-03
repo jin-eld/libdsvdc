@@ -1,6 +1,6 @@
 /*
     Copyright (c) 2009 digitalSTROM.org, Zurich, Switzerland
-    Copyright (c) 2013 aizo ag, Zurich, Switzerland
+    Copyright (c) 2013 digitalSTROM AG, Zurich, Switzerland
 
     Author: Sergey 'Jin' Bostandzhyan <jin@mediatomb.cc>
 

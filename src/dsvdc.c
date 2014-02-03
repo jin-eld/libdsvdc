@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013, 2014 aizo ag, Zurich, Switzerland
+    Copyright (c) 2013, 2014 digitalSTROM AG, Zurich, Switzerland
 
     Author: Sergey 'Jin' Bostandzhyan <jin@dev.digitalstrom.org>
 
