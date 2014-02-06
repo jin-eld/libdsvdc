@@ -60,7 +60,7 @@ static void dsvdc_avahi_entry_group_callback(AvahiEntryGroup *group,
 
     if (!(handle->avahi_group == group || group == NULL))
     {
-        log("invalid group\n");
+        return; /* this was an assert in the avahi example */
     }
 
     switch (state)
