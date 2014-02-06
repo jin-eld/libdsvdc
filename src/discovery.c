@@ -106,7 +106,8 @@ static void dsvdc_avahi_entry_group_callback(AvahiEntryGroup *group,
     }
 }
 
-static void dsvdc_avahi_create_services(dsvdc_t *handle, AvahiClient *client) {
+static void dsvdc_avahi_create_services(dsvdc_t *handle, AvahiClient *client)
+{
     int ret = 0;
     char *new_name = NULL;
 
@@ -327,7 +328,18 @@ void dsvdc_discovery_work(dsvdc_t *handle)
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     /* check justone event and return immediately */
-    avahi_simple_poll_iterate(handle->avahi_poll, 0);
+    if (avahi_simple_poll_iterate(handle->avahi_poll, 0) != 0)
+    {
+        /* if daemon connection is lost we need to reinit */
+        log("avahi error, reinitializing...\n");
+        char *temp_name = strdup(handle->avahi_name);
+        dsvdc_discovery_cleanup(handle);
+        dsvdc_discovery_init(handle, temp_name);
+        if (temp_name)
+        {
+            free(temp_name);
+        }
+    }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
@@ -340,19 +352,28 @@ void dsvdc_discovery_cleanup(dsvdc_t *handle)
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
 
+    if (handle->avahi_group)
+    {
+        avahi_entry_group_free(handle->avahi_group);
+        handle->avahi_group = NULL;
+    }
+
     if (handle->avahi_client)
     {
         avahi_client_free(handle->avahi_client);
+        handle->avahi_client = NULL;
     }
 
     if (handle->avahi_poll)
     {
         avahi_simple_poll_free(handle->avahi_poll);
+        handle->avahi_poll = NULL;
     }
 
     if (handle->avahi_name)
     {
         avahi_free(handle->avahi_name);
+        handle->avahi_name = NULL;
     }
 
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
