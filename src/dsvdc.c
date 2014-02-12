@@ -36,6 +36,7 @@
 #include <arpa/inet.h>
 #include <limits.h>
 #include <utlist.h>
+#include <ctype.h>
 
 #include "common.h"
 #include "dsvdc.h"
@@ -111,7 +112,15 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
 
     pthread_mutexattr_destroy(&attr);
 
-    strncpy(inst->vdc_dsuid, dsuid, DSUID_LENGTH);
+    size_t i;
+    for (i = 0; i < DSUID_LENGTH; i++)
+    {
+        if (dsuid[i] == '\0')
+        {
+            break;
+        }
+        inst->vdc_dsuid[i] = tolower(dsuid[i]);
+    }
     inst->vdc_dsuid[DSUID_LENGTH] = '\0';
     inst->last_list_cleanup = time(NULL);
 
