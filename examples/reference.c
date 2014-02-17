@@ -83,25 +83,74 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
                        uint32_t offset, uint32_t count,
                        dsvdc_property_t *property, void *userdata)
 {
-    int i;
-    (void)offset;
-    (void)count;
     (void)userdata;
-    printf("received get property callback for device %s\n", dsuid);
+    printf("\n**** get property %s / %s\n\n",  name, dsuid);
     if (strcmp(name, "buttonInputSettings") == 0)
     {
         dsvdc_property_add_uint(property, 0, "group", 1);
-        dsvdc_property_add_uint(property, 0, "function", 5);
+
+        /* supports on/off modes only */
+        dsvdc_property_add_uint(property, 0, "function", 0);
+
+        /* mode "standard" */
         dsvdc_property_add_uint(property, 0, "mode", 0);
+
+        dsvdc_property_add_bool(property, 0, "setsLocalPriority", false);
+        dsvdc_property_add_bool(property, 0, "callsPresent", false);
+
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "buttonInputDescriptions") == 0)
     {
+        /* human readable name/number for the input */
+        dsvdc_property_add_string(property, 0, "name", "virtual button");
+        dsvdc_property_add_bool(property, 0, "supportsLocalKeyMode", false);
+
+        /* type of physical button: single pushbutton */
+        dsvdc_property_add_uint(property, 0, "buttonType", 1);
+
+        /* element of multi-contact button: center */
+        dsvdc_property_add_uint(property, 0, "buttonElementID", 0);
+
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "primaryGroup") == 0)
     {
+        /* group 1 / Yellow, we imitate a simple lamp */
         dsvdc_property_add_uint(property, 0, "primaryGroup", 1);
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "outputDescriptions") == 0)
+    {
+        /* we have only one output */
+
+        /* name of the output */
+        dsvdc_property_add_string(property, 0, "name", "libdSvDC output");
+
+        /* output supports on/off modes only */
+        dsvdc_property_add_uint(property, 0, "function", 0);
+
+        /* output usage: "undefined" */
+        dsvdc_property_add_uint(property, 0, "outputUsage", 0);
+
+        /* no support for variable ramps */
+        dsvdc_property_add_bool(property, 0, "variableRamp", false);
+
+        /* max power 100W */
+        dsvdc_property_add_uint(property, 0, "maxPower", 100);
+
+        /* minimum dimming value 0, we don't support dimming at all */
+        dsvdc_property_add_uint(property, 0, "minDim", 0);
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "binaryInputDescriptions") == 0)
+    {
+        /* no binary inputs for this device */
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "sensorDescriptions") == 0)
+    {
+        /* no sensor descriptions for this device */
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "outputSettings") == 0)
@@ -117,9 +166,33 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
     }
     else if (strcmp(name, "isMember") == 0)
     {
-        for (i = 0; i < 64; i++)
+        if (count > 0)
         {
-            dsvdc_property_add_bool(property, i, "isMember", (i == 1));
+            size_t x = 0;
+            uint32_t i;
+            for (i = offset; i < count; i++)
+            {
+                dsvdc_property_add_bool(property, x, "isMember", (i == 1));
+                x++;
+            }
+        }
+        else
+        {
+            dsvdc_property_add_bool(property, 0, "isMember", (offset == 1));
+        }
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "scenes") == 0)
+    {
+        /* we do not support saving scene values and will return the same
+         * stuff for all scenes for now */
+        uint32_t i;
+        for (i = 0; i < count; i++)
+        {
+            dsvdc_property_add_bool(property, i, "dontCare", false);
+            dsvdc_property_add_bool(property, i, "ignoreLocalPriority", false);
+            dsvdc_property_add_bool(property, i, "flashing", false);
+            dsvdc_property_add_int(property, i, "dimTimeSelector", 0);
         }
         dsvdc_send_property_response(handle, property);
     }
