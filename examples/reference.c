@@ -259,6 +259,7 @@ int main()
     dsvdc_set_bye_callback(handle, bye_cb);
     dsvdc_set_get_property_callback(handle, getprop_cb);
 
+    int count = 0;
     while(!g_shutdown_flag)
     {
         /* let the work function do our timing, 2secs timeout */
@@ -272,6 +273,7 @@ int main()
             }
             announced = false;
             ready = false;
+            count = 0;
         }
         else
         {
@@ -283,11 +285,24 @@ int main()
                         DSVDC_OK)
                 {
                     announced = true;
+                    count = 1;
                 }
             }
             if (!ready)
             {
                 announced = false;
+            }
+        }
+
+        /* the below code is just a test for the vdSM, it will periodically
+           send an "identify device" message */
+        if (count > 0)
+        {
+            count++;
+            if (count == 30)
+            {
+                dsvdc_identify_device(handle, g_dev_dsuid);
+                count = 1;
             }
         }
     }

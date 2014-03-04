@@ -219,6 +219,34 @@ int dsvdc_send_pong(dsvdc_t *handle, const char *dsuid)
     return ret;
 }
 
+int dsvdc_identify_device(dsvdc_t *handle, const char *dsuid)
+{
+    int ret;
+
+    if (!handle)
+    {
+        log("can't send identify message: invalid handle\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (!dsuid)
+    {
+        log("can't send identify message: invalid dSUID\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    Vdcapi__Message reply = VDCAPI__MESSAGE__INIT;
+    Vdcapi__VdcSendIdentify submsg = VDCAPI__VDC__SEND_IDENTIFY__INIT;
+
+    submsg.dsuid = (char *)dsuid;
+    reply.type = VDCAPI__TYPE__VDC_SEND_IDENTIFY;
+    reply.vdc_send_identify = &submsg;
+
+    ret = dsvdc_send_message(handle, &reply);
+    log("VDC_SEND_IDENTIFY sent with code %d\n", ret);
+    return ret;
+}
+
 int dsvdc_device_vanished(dsvdc_t *handle, const char *dsuid)
 {
     int ret;

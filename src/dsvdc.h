@@ -359,6 +359,18 @@ int dsvdc_announce_device(dsvdc_t *handle, const char *dsuid, void *arg,
  */
 int dsvdc_device_vanished(dsvdc_t *handle, const char *dsuid);
 
+/*! \brief Allow devices to identify themselves to the vdSM.
+ *
+ * This is similar to the identify callback that is sent in response to an
+ * identificatoin request. The difference is that in this case the device can
+ * identify itself by its own choice, without a previous request from the vdSM.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param dsuid the device identifier.
+ * \return error code.
+ */
+int dsvdc_identify_device(dsvdc_t *handle, const char *dsuid);
+
 /*! \brief Send a response to get property request to the vdSM.
  *
  * Use this function to reply to the vdSM's get property request. Make sure
