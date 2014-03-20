@@ -334,8 +334,6 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
     int ret = dsvdc_setup_handle(port, dsuid, userdata, inst);
     if (ret != DSVDC_OK)
     {
-        pthread_mutex_destroy(&inst->dsvdc_handle_mutex);
-        free(inst);
         return ret;
     }
 
