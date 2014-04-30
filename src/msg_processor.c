@@ -146,36 +146,88 @@ void dsvdc_send_error_message(dsvdc_t *handle, Vdcapi__ResultCode code,
     dsvdc_send_message(handle, &msg);
 }
 
-int dsvdc_announce_device(dsvdc_t *handle, const char *dsuid, void *arg,
-                          void (*function)(dsvdc_t *handle, int code,
-                                           void *arg, void *userdata))
+int dsvdc_announce_container(dsvdc_t *handle, const char *dsuid, void *arg,
+                             void (*function)(dsvdc_t *handle, int code,
+                                              void *arg, void *userdata))
 {
     int ret;
     Vdcapi__Message  msg = VDCAPI__MESSAGE__INIT;
-    Vdcapi__VdcSendAnnounce submsg = VDCAPI__VDC__SEND_ANNOUNCE__INIT;
+    Vdcapi__VdcSendAnnounceVdc submsg = VDCAPI__VDC__SEND_ANNOUNCE_VDC__INIT;
 
     submsg.dsuid = (char *)dsuid;
 
-    msg.type = VDCAPI__TYPE__VDC_SEND_ANNOUNCE;
+    msg.type = VDCAPI__TYPE__VDC_SEND_ANNOUNCE_VDC;
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     msg.message_id = ++(handle->request_id);
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 
     msg.has_message_id = 1;
-    msg.vdc_send_announce = &submsg;
+    msg.vdc_send_announce_vdc = &submsg;
 
-    log("sending VDC_SEND_ANNOUNCE for device %s\n", dsuid);
+    log("sending VDC_SEND_ANNOUNCE_VDC for container %s\n", dsuid);
     ret = dsvdc_send_message(handle, &msg);
     if (ret == DSVDC_OK)
     {
-        log("VDC_SEND_ANNOUNCE sent, caching id %u for response tracking\n",
-             msg.message_id);
+        log("VDC_SEND_ANNOUNCE_VDC sent, caching id %u for response "
+            "tracking\n", msg.message_id);
 
         cached_request_t *request = malloc(sizeof(cached_request_t));
         if (!request)
         {
-            log("VDC_SEND_ANNOUNCE: could not allocate memory for cache\n");
+            log("VDC_SEND_ANNOUNCE_VDC: could not allocate memory for "
+                "cache\n");
+            return DSVDC_ERR_OUT_OF_MEMORY;
+        }
+
+        request->arg = arg;
+        request->callback = (void *)function;
+        time(&request->timestamp);
+        request->message_id = msg.message_id;
+        pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+        LL_PREPEND(handle->requests_list, request);
+        pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+    }
+
+    return ret;
+}
+
+
+int dsvdc_announce_device(dsvdc_t *handle, const char *container_dsuid,
+                          const char *dsuid, void *arg,
+                          void (*function)(dsvdc_t *handle, int code,
+                                           void *arg, void *userdata))
+{
+    int ret;
+    Vdcapi__Message  msg = VDCAPI__MESSAGE__INIT;
+    Vdcapi__VdcSendAnnounceDevice submsg =
+                                        VDCAPI__VDC__SEND_ANNOUNCE_DEVICE__INIT;
+
+    submsg.dsuid = (char *)dsuid;
+    submsg.vdc_dsuid = (char *)container_dsuid;
+
+    msg.type = VDCAPI__TYPE__VDC_SEND_ANNOUNCE_DEVICE;
+
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    msg.message_id = ++(handle->request_id);
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+
+    msg.has_message_id = 1;
+    msg.vdc_send_announce_device = &submsg;
+
+    log("sending VDC_SEND_ANNOUNCE_DEVICE for device %s in container %s\n",
+        dsuid, container_dsuid);
+    ret = dsvdc_send_message(handle, &msg);
+    if (ret == DSVDC_OK)
+    {
+        log("VDC_SEND_ANNOUNCE_DEVICE sent, caching id %u for response "
+            "tracking\n", msg.message_id);
+
+        cached_request_t *request = malloc(sizeof(cached_request_t));
+        if (!request)
+        {
+            log("VDC_SEND_ANNOUNCE_DEVICE: could not allocate memory for "
+                "cache\n");
             return DSVDC_ERR_OUT_OF_MEMORY;
         }
 
@@ -289,6 +341,12 @@ static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
     if (!msg->vdsm_request_hello)
     {
         log("received VDSM_REQUEST_HELLO message type, but data is missing!\n");
+        return;
+    }
+
+    if (!msg->vdsm_request_hello->has_api_version)
+    {
+        log("received VDSM_REQUEST_HELLO: missing API version information!\n");
         return;
     }
 

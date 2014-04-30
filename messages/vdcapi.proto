@@ -23,16 +23,19 @@ package vdcapi;
 
 message vdsm_RequestHello {
     optional string dSUID = 1;
-    optional uint32 api_version = 2;
-    optional string push_uri = 3;
+    optional uint32 api_version = 2 [ default = 2 ];
 }
 
 message vdc_ResponseHello {
     optional string dSUID = 1;
-    optional bool allow_disconnect = 2 [ default = false ];
 }
 
-message vdc_SendAnnounce {
+message vdc_SendAnnounceDevice {
+    optional string dSUID = 1;
+    optional string vdc_dSUID = 2;
+}
+
+message vdc_SendAnnounceVdc {
     optional string dSUID = 1;
 }
 

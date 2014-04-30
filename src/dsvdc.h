@@ -71,7 +71,7 @@ enum
  *              dsvdc_cleanup() when no longer needed.
  *  \return Error/success code.
  */
-int dsvdc_new(unsigned short port, const char *dsuid, const char *name, 
+int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
               void *userdata, dsvdc_t **handle);
 
 /*! \brief Free library instance and all associated resources.
@@ -108,7 +108,8 @@ bool dsvdc_is_connected(dsvdc_t *handle);
  *
  * The callback function will be called each time a VDSM_REQUEST_HELLO message
  * is received from the vdSM. Pass NULL for the callback function to unregister
- * the callback. After receiving "hello" you should announce your devices.
+ * the callback. After receiving "hello" you should announce your vdc's and
+ * devices.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
  * \param void (*function)(dsvdc_t *handle, void *userdata) callback function.
@@ -328,23 +329,45 @@ void dsvdc_set_get_property_callback(dsvdc_t *handle,
  */
 int dsvdc_send_pong(dsvdc_t *handle, const char *dsuid);
 
-/*! \brief Announce a device to the vdSM.
+/*! \brief Announce a virtual device container to the vdSM.
  *
- * Use this function to make your device known to the vdSM. The device must
- * be fully operational and ready to receive commands from the vdSM.
+ * Use this function to make your device container known to the vdSM.
  *
  * The confirmation callback will only be fired if the function returned with
  * DSVDC_OK. In all other cases you can assume that the message was not
  * sent.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param dsuid the device identifier that was received in the ping callback.
+ * \param dsuid the vdc identifier that.
  * \param arg arbitrary argument that will be returend to you in the callback.
  * \param void (*function)(dsvdc_t *handle, void *arg, void *userdata) callback
  * function.
  * \return error code.
  */
-int dsvdc_announce_device(dsvdc_t *handle, const char *dsuid, void *arg,
+int dsvdc_announce_container(dsvdc_t *handle, const char *dsuid, void *arg,
+                             void (*function)(dsvdc_t *handle, int code,
+                             void *arg, void *userdata));
+
+/*! \brief Announce a device to the vdSM.
+ *
+ * Use this function to make your device known to the vdSM. The device must
+ * be fully operational and ready to receive commands from the vdSM. According
+ * to the specification the device must reside within a container.
+ *
+ * The confirmation callback will only be fired if the function returned with
+ * DSVDC_OK. In all other cases you can assume that the message was not
+ * sent.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param container_dsuid the device container identifier.
+ * \param dsuid the device identifier.
+ * \param arg arbitrary argument that will be returend to you in the callback.
+ * \param void (*function)(dsvdc_t *handle, void *arg, void *userdata) callback
+ * function.
+ * \return error code.
+ */
+int dsvdc_announce_device(dsvdc_t *handle, const char *container_dsuid,
+                          const char *dsuid, void *arg,
                           void (*function)(dsvdc_t *handle, int code, void *arg,
                                            void *userdata));
 
@@ -383,7 +406,7 @@ int dsvdc_identify_device(dsvdc_t *handle, const char *dsuid);
  * \note IMPORTANT: this function will free your property handle, no matter if
  * sending succeeded or not. You don't have a second chance if you constructed
  * an invalid property (which would be a coding mistake on your side), if
- * a property is invalid an error response message will be automatically sent 
+ * a property is invalid an error response message will be automatically sent
  * to the vdSM.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().

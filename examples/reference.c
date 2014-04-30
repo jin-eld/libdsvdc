@@ -32,6 +32,8 @@
 #include "dsvdc.h"
 
 static int g_shutdown_flag = 0;
+/* "library" dsuid is currently unused in the vdsm */
+static char g_lib_dsuid[25] = { "010101010101010101010101" };
 static char g_vdc_dsuid[25] = { "3504175FE0000000BC514CBE" };
 static char g_dev_dsuid[25] = { "3504175FE000000098BD8E80" };
 
@@ -64,11 +66,26 @@ static void ping_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
     }
 }
 
-static void announce_cb(dsvdc_t *handle, int code, void *arg, void *userdata)
+static void announce_device_cb(dsvdc_t *handle, int code, void *arg,
+                               void *userdata)
 {
     (void)handle;
     (void)userdata;
     printf("got code %d to announcement of device %s\n", code, (char *)arg);
+}
+
+static void announce_container_cb(dsvdc_t *handle, int code, void *arg,
+                               void *userdata)
+{
+    (void)handle;
+    (void)userdata;
+    printf("got code %d to announcement of device %s\n", code, (char *)arg);
+    int ret = dsvdc_announce_device(handle, g_vdc_dsuid, g_dev_dsuid,
+                                    (void *)g_dev_dsuid, announce_device_cb);
+    if (ret != DSVDC_OK)
+    {
+        printf("dsvdc_announce_device returned error %d\n", ret);
+    }
 }
 
 static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
@@ -247,7 +264,7 @@ int main()
     dsvdc_t *handle = NULL;
 
     /* initialize new library instance */
-    if (dsvdc_new(0, g_vdc_dsuid, "Example vDC", &ready, &handle) != DSVDC_OK)
+    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", &ready, &handle) != DSVDC_OK)
     {
         fprintf(stderr, "dsvdc_new() initialization failed\n");
         return EXIT_FAILURE;
@@ -280,9 +297,9 @@ int main()
             printed = false;
             if (ready && !announced)
             {
-                if (dsvdc_announce_device(handle, g_dev_dsuid,
-                                         (void *)g_dev_dsuid, announce_cb) ==
-                        DSVDC_OK)
+                if (dsvdc_announce_container(handle, g_vdc_dsuid,
+                                            (void *)g_lib_dsuid,
+                                             announce_container_cb) == DSVDC_OK)
                 {
                     announced = true;
                     count = 1;

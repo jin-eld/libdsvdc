@@ -37,7 +37,7 @@ enum Type {
 
     VDSM_SEND_PING = 8;
     VDC_SEND_PONG = 9;
-    VDC_SEND_ANNOUNCE = 10;
+    VDC_SEND_ANNOUNCE_DEVICE = 10;
     VDC_SEND_VANISH = 11;
     VDC_SEND_PUSH_PROPERTY = 12;
     VDSM_SEND_REMOVE = 13;
@@ -53,6 +53,7 @@ enum Type {
     VDSM_NOTIFICATION_SET_CONTROL_VALUE = 21;
 
     VDC_SEND_IDENTIFY = 22;
+    VDC_SEND_ANNOUNCE_VDC = 23;
 }
 
 message Message {
@@ -76,7 +77,7 @@ message Message {
     // requests that only expect a response in case of error
     optional vdsm_SendPing vdsm_send_ping = 105;
     optional vdc_SendPong vdc_send_pong = 106;
-    optional vdc_SendAnnounce vdc_send_announce = 107;
+    optional vdc_SendAnnounceDevice vdc_send_announce_device = 107;
     optional vdc_SendVanish vdc_send_vanish = 108;
     optional vdc_SendPushProperty vdc_send_push_property = 109;
     optional vdsm_SendRemove vdsm_send_remove = 110;
@@ -90,7 +91,9 @@ message Message {
     optional vdsm_NotificationCallMinScene vdsm_send_call_min_scene = 116;
     optional vdsm_NotificationIdentify vdsm_send_identify = 117;
     optional vdsm_NotificationSetControlValue vdsm_send_set_control_value = 118;
+
     optional vdc_SendIdentify vdc_send_identify = 119;
+    optional vdc_SendAnnounceVdc vdc_send_announce_vdc = 120;
 }
 
 enum ResultCode {

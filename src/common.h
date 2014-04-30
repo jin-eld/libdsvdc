@@ -42,7 +42,7 @@
 #define MAX_DATA_SIZE           16384
 
 /* Currently known and supported API version */
-#define SUPPORTED_API_VERSION   1
+#define SUPPORTED_API_VERSION   2
 
 /* length of a dSUID as string (not containing NULL terminator) */
 #define DSUID_LENGTH            24
