@@ -204,7 +204,7 @@ int dsvdc_announce_device(dsvdc_t *handle, const char *container_dsuid,
                                         VDCAPI__VDC__SEND_ANNOUNCE_DEVICE__INIT;
 
     submsg.dsuid = (char *)dsuid;
-    submsg.vdc_dsuid = (char *)container_dsuid;
+    submsg.vdcdsuid = (char *)container_dsuid;
 
     msg.type = VDCAPI__TYPE__VDC_SEND_ANNOUNCE_DEVICE;
 

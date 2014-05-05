@@ -32,7 +32,7 @@ message vdc_ResponseHello {
 
 message vdc_SendAnnounceDevice {
     optional string dSUID = 1;
-    optional string vdc_dSUID = 2;
+    optional string vdcdSUID = 2;
 }
 
 message vdc_SendAnnounceVdc {
