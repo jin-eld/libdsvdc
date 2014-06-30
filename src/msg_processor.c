@@ -204,7 +204,7 @@ int dsvdc_announce_device(dsvdc_t *handle, const char *container_dsuid,
                                         VDCAPI__VDC__SEND_ANNOUNCE_DEVICE__INIT;
 
     submsg.dsuid = (char *)dsuid;
-    submsg.vdcdsuid = (char *)container_dsuid;
+    submsg.vdc_dsuid = (char *)container_dsuid;
 
     msg.type = VDCAPI__TYPE__VDC_SEND_ANNOUNCE_DEVICE;
 
@@ -540,9 +540,9 @@ static void dsvdc_process_call_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_call_scene->has_zoneid)
+    if (msg->vdsm_send_call_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_call_scene->zoneid;
+        zone_id = msg->vdsm_send_call_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -588,9 +588,9 @@ static void dsvdc_process_save_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_save_scene->has_zoneid)
+    if (msg->vdsm_send_save_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_save_scene->zoneid;
+        zone_id = msg->vdsm_send_save_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -634,9 +634,9 @@ static void dsvdc_process_undo_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_undo_scene->has_zoneid)
+    if (msg->vdsm_send_undo_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_undo_scene->zoneid;
+        zone_id = msg->vdsm_send_undo_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -681,9 +681,9 @@ static void dsvdc_process_set_local_prio(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_set_local_prio->has_zoneid)
+    if (msg->vdsm_send_set_local_prio->has_zone_id)
     {
-        zone_id = msg->vdsm_send_set_local_prio->zoneid;
+        zone_id = msg->vdsm_send_set_local_prio->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -721,9 +721,9 @@ static void dsvdc_process_call_min_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_call_min_scene->has_zoneid)
+    if (msg->vdsm_send_call_min_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_call_min_scene->zoneid;
+        zone_id = msg->vdsm_send_call_min_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -759,9 +759,9 @@ static void dsvdc_process_identify(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_identify->has_zoneid)
+    if (msg->vdsm_send_identify->has_zone_id)
     {
-        zone_id = msg->vdsm_send_identify->zoneid;
+        zone_id = msg->vdsm_send_identify->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -805,9 +805,9 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_set_control_value->has_zoneid)
+    if (msg->vdsm_send_set_control_value->has_zone_id)
     {
-        zone_id = msg->vdsm_send_set_control_value->zoneid;
+        zone_id = msg->vdsm_send_set_control_value->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
