@@ -44,6 +44,7 @@ enum
     DSVDC_ERR_PROPERTY_INDEX = -6,  /*!< no property under given index */
     DSVDC_ERR_INVALID_PROPERTY = -7,/*!< invalid property structure */
     DSVDC_ERR_DISCOVERY = -8,       /*!< could not set up Avahi */
+    DSVDC_ERR_PROPERTY_VALUE_TYPE = -9, /*!< property value type mismatch */
 
     /* vDC API errors as received from vdSM (synced with messages.proto) */
     DSVDC_ERR_MESSAGE_UNKNOWN = 1,
@@ -315,9 +316,9 @@ void dsvdc_set_control_value_callback(dsvdc_t *handle,
  *                         callback function.
  */
 void dsvdc_set_get_property_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, const char *name,
-                         uint32_t offset, uint32_t count,
-                         dsvdc_property_t *property, void *userdata));
+        void (*function)(dsvdc_t *handle, const char *dsuid,
+                         dsvdc_property_t *property, dsvdc_property_t *query,
+                         void *userdata));
 
 /*! \brief Send pong reply to a ping request.
  *
@@ -428,13 +429,30 @@ int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property);
  * and thus will not be freed by this function. If you do not need your property
  * anymore you must free it using dsvdc_property_free().
  */
-int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
-                        uint32_t offset, dsvdc_property_t *property);
+int dsvdc_push_property(dsvdc_t *handle, const char *dsuid,
+                        dsvdc_property_t *property);
 /*
  * ****************************************************************************
- * Property helper functions.
+ * Property functions.
  * ****************************************************************************
  */
+
+/*! \brief Property value types as returned by the
+ *  dsvdc_property_get_value_type() function. This allows you to determine
+ *  which value is stored within the given property so that you can use
+ *  the appropriate property_get_xxx() function.
+ */
+typedef enum
+{
+    DSVDC_PROPERTY_VALUE_NONE,      /*!< property does not have а value */
+    DSVDC_PROPERTY_VALUE_BOOL,      /*!< property value is of type boolean */
+    DSVDC_PROPERTY_VALUE_UINT64,    /*!< property value is a uint64_t */
+    DSVDC_PROPERTY_VALUE_INT64,     /*!< property value is an int64_t */
+    DSVDC_PROPERTY_VALUE_DOUBLE,    /*!< property value is a double */
+    DSVDC_PROPERTY_VALUE_STRING,    /*!< property value is a char* */
+    DSVDC_PROPERTY_VALUE_BYTES      /*!< property value is a uint8_t* */
+} dsvdc_property_value_t;
+
 
 /*! \brief Allocate new property for further manipulation.
  *
@@ -442,40 +460,14 @@ int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
  * push property notifications. Make sure to free your property using the
  * dsvdc_property_free() function when you no longer need it.
  *
- * \note The properties can be seen as a two dimensional array. The first
- * level is a list of property element arrays. The element arrays carry the
- * actual key:value pairs. By definition, all element arrays must be of the
- * same type and length.
- *
- * The following example visualizes the structure for the buttonInputSettings
- * property, which in this case describes two inputs, with one element per
- * input.
- *
- * Property: "buttonInputSettings" : [ 0, 1 ]
- *                                     |  |
- *                                     |  Elements: [ "mode : 1 ]
- *                                     |
- *                                     Elements: [ "mode" : 0 ]
- *
- * More properties on the first level can be added automatically by choosing
- * an appropriate index in the dsvdc_property_add_*().
- * IMPORTANT: you must not have "holes" in your property array (i.e. by
- * adding a property at index 0 and index 2, but not adding anything at
- * index 1). If your property is invalid, it will be rejected by the
- * send function.
- *
  * \note All property helper functions that manipulate properties
  * are NOT THREADSAFE!
  *
- * \param[in] name the name of the property set.
- * \param[in] hint expected size of the first level array, if zero it will
- * be reallocated on demand, based on the index parameter of the
- * dsvdc_property_add_*() functions.
  * \param[out] property the newly allocated property.
  * \return error code, indicating if the property was allocated.
  */
-int dsvdc_property_new(const char *name, size_t hint,
-                       dsvdc_property_t **property);
+
+int dsvdc_property_new(dsvdc_property_t **property);
 
 /*! \brief Free previously allocated property.
  *
@@ -492,74 +484,225 @@ int dsvdc_property_new(const char *name, size_t hint,
  * you have to free the property that you received in the callback yourself,
  * by calling dsvdc_property_free().
  *
- * \param property that should be freed.
+ * \param[in] property that should be freed.
  */
 void dsvdc_property_free(dsvdc_property_t *property);
 
 /* \brief Add an integer element to a property.
  *
- * \param property property handle
- * \param index index of the property in the first level array, see
- * documentation of dsvdc_property_new() for more information. Indices start
- * at zero.
- * \param key name of the property element
- * \param value value of the property element
+ * \param[in] property property handle
+ * \param[in] key name of the property element
+ * \param[in] value value of the property element
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_add_int(dsvdc_property_t *property, size_t index,
-                           const char *key, int64_t value);
+int dsvdc_property_add_int(dsvdc_property_t *property, const char *key,
+                           int64_t value);
 
 /* \brief Add an unsigned integer element to a property.
  *
- * \param property property handle
- * \param index index of the property in the first level array, see
- * documentation of dsvdc_property_new() for more information. Indices start
- * at zero.
- * \param key name of the property element
- * \param value value of the property element
+ * \param[in] property property handle
+ * \param[in] key name of the property element
+ * \param[in] value value of the property element
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_add_uint(dsvdc_property_t *property, size_t index,
-                            const char *key, uint64_t value);
+int dsvdc_property_add_uint(dsvdc_property_t *property, const char *key,
+                            uint64_t value);
 
 /* \brief Add a boolean element to a property.
  *
- * \param property property handle
- * \param index index of the property in the first level array, see
- * documentation of dsvdc_property_new() for more information. Indices start
- * at zero.
- * \param key name of the property element
- * \param value value of the property element
+ * \param[in] property property handle
+ * \param[in] key name of the property element
+ * \param[in] value value of the property element
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_add_bool(dsvdc_property_t *property, size_t index,
-                            const char *key, bool value);
+int dsvdc_property_add_bool(dsvdc_property_t *property, const char *key,
+                            bool value);
 
 /* \brief Add a double element to a property.
  *
- * \param property property handle
- * \param index index of the property in the first level array, see
- * documentation of dsvdc_property_new() for more information. Indices start at
- * zero.
- * \param key name of the property element
- * \param value value of the property element
+ * \param[in] property property handle
+ * \param[in] key name of the property element
+ * \param[in] value value of the property element
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_add_double(dsvdc_property_t *property, size_t index,
-                              const char *key, double value);
+int dsvdc_property_add_double(dsvdc_property_t *property, const char *key,
+                              double value);
 
 /* \brief Add a string element to a property.
  *
- * \param property property handle
- * \param index index of the property in the first level array, see
- * documentation of dsvdc_property_new() for more information. Indices start at
- * zero.
- * \param key name of the property element
- * \param value value of the property element
+ * \param[in] property property handle
+ * \param[in] key name of the property element
+ * \param[in] value value of the property element
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_add_string(dsvdc_property_t *property, size_t index,
-                              const char *key, const char *value);
+int dsvdc_property_add_string(dsvdc_property_t *property, const char *key,
+                              const char *value);
+
+/* \brief Add a property to a property.
+ *
+ * This allows you to construct nested properties. This function takes
+ * ownership of your value pointer, you must not access it anymore after
+ * it has been passed to this function. The data below the value parameter
+ * will be freed together with the property to which it is attached either
+ * when the property is sent or freed explicitly via the dsvdc_property_free()
+ * call.
+ *
+ * \param[in] property property handle
+ * \param[in] name, optoinal name of the property, may be NULL
+ * \param value property that will be added to the existing one
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
+                                dsvdc_property_t **value);
+
+/* \brief Retrieve the number of properties within a property.
+ *
+ * A property can be seen as either a key:value pair or an array of
+ * subproperties. This function will return the number of available
+ * subproperties.
+ *
+ * \param[in] property property handle
+ * \return number of available subproperties
+ */
+size_t dsvdc_property_get_num_properties(dsvdc_property_t *property);
+
+/* \brief Retrieve the property name.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] name property name, if the function succeeds the name must be
+ * freed by the caller
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_name(dsvdc_property_t *property, size_t index,
+                            char **name);
+
+/* \brief Retrieve the value type of the property.
+ *
+ * This function allows you to decide which dsvdc_property_get_xxx() you
+ * have to use and will also let you know if the property does not provide a
+ * value.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] type, value type of the property
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_value_type(dsvdc_property_t *property, size_t index,
+                                  dsvdc_property_value_t *type);
+
+/* \brief Retrieve a boolean property value.
+ *
+ * Use dsvdc_property_get_value_type() in order to determine which value type
+ * is provided by the property.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] out, property value
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_bool(dsvdc_property_t *property, size_t index,
+                            bool *out);
+
+/* \brief Retrieve an unsigned integer property value.
+ *
+ * Use dsvdc_property_get_value_type() in order to determine which value type
+ * is provided by the property.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] out, property value
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_uint(dsvdc_property_t *property, size_t index,
+                              uint64_t *out);
+
+/* \brief Retrieve an integer property value.
+ *
+ * Use dsvdc_property_get_value_type() in order to determine which value type
+ * is provided by the property.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] out, property value
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_int(dsvdc_property_t *property, size_t index,
+                              int64_t *out);
+
+/* \brief Retrieve a double property value.
+ *
+ * Use dsvdc_property_get_value_type() in order to determine which value type
+ * is provided by the property.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] out, property value
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_double(dsvdc_property_t *property, size_t index,
+                              double *out);
+
+/* \brief Retrieve a string property value.
+ *
+ * Use dsvdc_property_get_value_type() in order to determine which value type
+ * is provided by the property.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] out, property value, must be freed by the caller
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_string(dsvdc_property_t *property, size_t index,
+                              char **out);
+
+/* \brief Retrieve a data array property value.
+ *
+ * Use dsvdc_property_get_value_type() in order to determine which value type
+ * is provided by the property.
+ *
+ * \param[in] property property handle
+ * \param[in] index property index
+ * \param[out] out property value, must be freed by the caller
+ * \param[out] len size of the data buffer, the buffer must be freed by the
+ * caller
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_bytes(dsvdc_property_t *property, size_t index,
+                             uint8_t **out, size_t *len);
+
+/* \brief Retrieve a copy of the property by the given name.
+ *
+ * Use this function to access nested properties.
+ *
+ * \note Be aware that you are receving a copy of the original property,
+ * you must free it when it is no longer needed.
+ *
+ * \param[in] property property handle
+ * \param[in] name property name, first match will be returned
+ * \param[out] out property copy, must be freed by the caller
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_property_by_name(dsvdc_property_t *property,
+                                        const char *name,
+                                        dsvdc_property_t **out);
+
+/* \brief Retrieve a copy of the property by the given index.
+ *
+ * Use this function to access nested properties. To determine the number of
+ * available properties use dsvdc_property_get_num_properties()
+ *
+ * \note Be aware that you are receving a copy of the original property,
+ * you must free it when it is no longer needed.
+ *
+ * \param[in] property property handle
+ * \param[in] index of the property
+ * \param[out] out property copy, must be freed by the caller
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_get_property_by_index(dsvdc_property_t *property,
+                                         size_t index, dsvdc_property_t **out);
+
 #ifdef __cplusplus
 }
 #endif

@@ -33,9 +33,9 @@
 
 static int g_shutdown_flag = 0;
 /* "library" dsuid is currently unused in the vdsm */
-static char g_lib_dsuid[25] = { "010101010101010101010101" };
-static char g_vdc_dsuid[25] = { "3504175FE0000000BC514CBE" };
-static char g_dev_dsuid[25] = { "3504175FE000000098BD8E80" };
+static char g_lib_dsuid[35] = { "12ee1a2e350930588f4aac3e2a36ccd400" };
+static char g_vdc_dsuid[35] = { "3ecb68072719302fa57a3fcfe588789200" };
+static char g_dev_dsuid[35] = { "7d827f4401893d758bb4a281876efec900" };
 
 void signal_handler(int signum)
 {
@@ -96,68 +96,63 @@ static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
     *ready = false;
 }
 
-static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
-                       uint32_t offset, uint32_t count,
-                       dsvdc_property_t *property, void *userdata)
+static void getprop_cb(dsvdc_t *handle, const char *dsuid,
+                       dsvdc_property_t *property, dsvdc_property_t *query,
+                       void *userdata)
 {
     (void)userdata;
-    printf("\n**** get property %s / %s\n\n",  name, dsuid);
-    if (strcmp(name, "buttonInputSettings") == 0)
+    int ret;
+    printf("\n**** get property %s\n",  dsuid);
+    char *name;
+    ret = dsvdc_property_get_name(query, 0, &name);
+    if (ret != DSVDC_OK)
     {
-        dsvdc_property_add_uint(property, 0, "group", 1);
+        dsvdc_property_free(property);
+        dsvdc_property_free(query);
+        return;
+    }
 
-        /* supports on/off modes only */
-        dsvdc_property_add_uint(property, 0, "function", 0);
+    if (strcmp(name, "outputDescription") == 0)
+    {
+        /* we have only one output */
 
-        /* mode "standard" */
-        dsvdc_property_add_uint(property, 0, "mode", 0);
+        /* name of the output */
+        dsvdc_property_add_string(property, "name", "libdSvDC output");
 
-        dsvdc_property_add_bool(property, 0, "setsLocalPriority", false);
-        dsvdc_property_add_bool(property, 0, "callsPresent", false);
+        /* output supports on/off modes only */
+        dsvdc_property_add_uint(property, "function", 0);
 
+        /* output usage: "undefined" */
+        dsvdc_property_add_uint(property, "outputUsage", 0);
+
+        /* no support for variable ramps */
+        dsvdc_property_add_bool(property, "variableRamp", false);
+
+        /* max power 100W */
+        dsvdc_property_add_uint(property, "maxPower", 100);
+
+        /* minimum dimming value 0, we don't support dimming at all */
+        dsvdc_property_add_uint(property, "minDim", 0);
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "buttonInputDescriptions") == 0)
     {
         /* human readable name/number for the input */
-        dsvdc_property_add_string(property, 0, "name", "virtual button");
-        dsvdc_property_add_bool(property, 0, "supportsLocalKeyMode", false);
+        dsvdc_property_add_string(property, "name", "virtual button");
+        dsvdc_property_add_bool(property, "supportsLocalKeyMode", false);
 
         /* type of physical button: single pushbutton */
-        dsvdc_property_add_uint(property, 0, "buttonType", 1);
+        dsvdc_property_add_uint(property, "buttonType", 1);
 
         /* element of multi-contact button: center */
-        dsvdc_property_add_uint(property, 0, "buttonElementID", 0);
+        dsvdc_property_add_uint(property, "buttonElementID", 0);
 
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "primaryGroup") == 0)
     {
         /* group 1 / Yellow, we imitate a simple lamp */
-        dsvdc_property_add_uint(property, 0, "primaryGroup", 1);
-        dsvdc_send_property_response(handle, property);
-    }
-    else if (strcmp(name, "outputDescriptions") == 0)
-    {
-        /* we have only one output */
-
-        /* name of the output */
-        dsvdc_property_add_string(property, 0, "name", "libdSvDC output");
-
-        /* output supports on/off modes only */
-        dsvdc_property_add_uint(property, 0, "function", 0);
-
-        /* output usage: "undefined" */
-        dsvdc_property_add_uint(property, 0, "outputUsage", 0);
-
-        /* no support for variable ramps */
-        dsvdc_property_add_bool(property, 0, "variableRamp", false);
-
-        /* max power 100W */
-        dsvdc_property_add_uint(property, 0, "maxPower", 100);
-
-        /* minimum dimming value 0, we don't support dimming at all */
-        dsvdc_property_add_uint(property, 0, "minDim", 0);
+        dsvdc_property_add_uint(property, "primaryGroup", 1);
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "binaryInputDescriptions") == 0)
@@ -170,53 +165,44 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid, const char *name,
         /* no sensor descriptions for this device */
         dsvdc_send_property_response(handle, property);
     }
+    else if (strcmp(name, "buttonInputSettings") == 0)
+    {
+        dsvdc_property_add_uint(property, "group", 1);
+
+        /* supports on/off modes only */
+        dsvdc_property_add_uint(property, "function", 0);
+
+        /* mode "standard" */
+        dsvdc_property_add_uint(property, "mode", 0);
+
+        dsvdc_property_add_bool(property, "setsLocalPriority", false);
+        dsvdc_property_add_bool(property, "callsPresent", false);
+
+        dsvdc_send_property_response(handle, property);
+    }
     else if (strcmp(name, "outputSettings") == 0)
     {
-        dsvdc_property_add_uint(property, 0, "group", 1);
-        dsvdc_property_add_uint(property, 0, "mode", 1);
+        dsvdc_property_add_uint(property, "group", 1);
+        dsvdc_property_add_uint(property, "mode", 1);
+        dsvdc_send_property_response(handle, property);
+    }
+    else if (strcmp(name, "channelDescriptions") == 0)
+    {
+        /* no channel descriptions for this device */
         dsvdc_send_property_response(handle, property);
     }
     else if (strcmp(name, "name") == 0)
     {
-        dsvdc_property_add_string(property, 0, "name", "libdSvDC");
-        dsvdc_send_property_response(handle, property);
-    }
-    else if (strcmp(name, "isMember") == 0)
-    {
-        if (count > 0)
-        {
-            size_t x = 0;
-            uint32_t i;
-            for (i = offset; i < count; i++)
-            {
-                dsvdc_property_add_bool(property, x, "isMember", (i == 1));
-                x++;
-            }
-        }
-        else
-        {
-            dsvdc_property_add_bool(property, 0, "isMember", (offset == 1));
-        }
-        dsvdc_send_property_response(handle, property);
-    }
-    else if (strcmp(name, "scenes") == 0)
-    {
-        /* we do not support saving scene values and will return the same
-         * stuff for all scenes for now */
-        uint32_t i;
-        for (i = 0; i < count; i++)
-        {
-            dsvdc_property_add_bool(property, i, "dontCare", false);
-            dsvdc_property_add_bool(property, i, "ignoreLocalPriority", false);
-            dsvdc_property_add_bool(property, i, "flashing", false);
-            dsvdc_property_add_int(property, i, "dimTimeSelector", 0);
-        }
+        dsvdc_property_add_string(property, "name", "libdSvDC");
         dsvdc_send_property_response(handle, property);
     }
     else
     {
-        dsvdc_property_free(property);
+        /* no such property - empty return */
+        dsvdc_send_property_response(handle, property);
     }
+    free(name);
+    dsvdc_property_free(query);
 }
 
 unsigned int random_in_range(unsigned int min, unsigned int max)

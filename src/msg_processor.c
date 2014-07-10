@@ -825,9 +825,6 @@ static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
 {
     log("received VDSM_REQUEST_GET_PROPERTY\n");
 
-    uint32_t offset = 0;
-    uint32_t count = 0;
-
     if (!msg->vdsm_request_get_property)
     {
         log("received VDSM_REQUEST_GET_PROPERTY message type, but data is "
@@ -841,45 +838,56 @@ static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_request_get_property->name)
+    if (!msg->vdsm_request_get_property->query)
     {
-        log("received VDSM_REQUEST_GET_PROPERTY: missing property name!\n");
+        log("received VDSM_REQUEST_GET_PROPERTY: missing query element!\n");
         return;
     }
 
-    if (msg->vdsm_request_get_property->has_offset)
-    {
-        offset = msg->vdsm_request_get_property->offset;
-    }
-
-    if (msg->vdsm_request_get_property->has_count)
-    {
-        count = msg->vdsm_request_get_property->count;
-    }
-
-    log("VDSM_REQUEST_GET_PROPERTY/%u: dSUID[ %s], name[ %s ], index[ %u ], "
-        "count[ %u ]\n", msg->message_id, msg->vdsm_request_get_property->dsuid,
-        msg->vdsm_request_get_property->name, offset, count);
+    log("VDSM_REQUEST_GET_PROPERTY/%u: dSUID[ %s ]\n",
+        msg->message_id, msg->vdsm_request_get_property->dsuid);
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     if (handle->vdsm_request_get_property)
     {
+        dsvdc_property_t *query = NULL;
         dsvdc_property_t *property = NULL;
-        int ret = dsvdc_property_new(msg->vdsm_request_get_property->name, 0,
-                                     &property);
+        int ret = dsvdc_property_new(&property);
         if (ret == DSVDC_OK)
         {
             property->message_id = msg->message_id;
         }
         else
         {
-            log("VDSM_REQUEST_GET_PROPERTY: could not allocave new property, "
+            log("VDSM_REQUEST_GET_PROPERTY: could not allocate new property, "
                 "error code: %d\n", ret);
+
+            dsvdc_send_error_message(handle,
+                                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                                msg->message_id);
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+            return;
         }
+
+        ret = dsvdc_property_convert_query(
+                        msg->vdsm_request_get_property->query,
+                        msg->vdsm_request_get_property->n_query, &query);
+
+        if (ret != DSVDC_OK)
+        {
+            log("VDSM_REQUEST_GET_PROPERTY: could not allocate new property, "
+                "error code: %d\n", ret);
+
+            dsvdc_send_error_message(handle,
+                                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                                msg->message_id);
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+            return;
+        }
+
         handle->vdsm_request_get_property(handle,
                 msg->vdsm_request_get_property->dsuid,
-                msg->vdsm_request_get_property->name,
-                offset, count, property, handle->callback_userdata);
+                property, query, handle->callback_userdata);
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
