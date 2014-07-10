@@ -19,7 +19,7 @@ dnl revision: increment if source code has changed, set to zero if current is
 dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
 dnl           interfaces have been removed or changed
-LIBDSVDC_LT_VERSION=1:0:0
+LIBDSVDC_LT_VERSION=2:0:0
 AC_SUBST(LIBDSVDC_LT_VERSION)
 
 
