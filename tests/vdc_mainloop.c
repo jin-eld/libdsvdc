@@ -54,7 +54,7 @@ Suite *dsvdc_suite()
     return s;
 }
 
-int main(int argc, char **argv)
+int main()
 {
     Suite *dsvdc = dsvdc_suite();
     SRunner *test_runner = srunner_create(dsvdc);
