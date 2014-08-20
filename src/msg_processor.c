@@ -888,6 +888,10 @@ static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
         handle->vdsm_request_get_property(handle,
                 msg->vdsm_request_get_property->dsuid,
                 property, query, handle->callback_userdata);
+        if (query)
+        {
+            dsvdc_property_free(query);
+        }
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
