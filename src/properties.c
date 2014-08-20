@@ -678,7 +678,7 @@ int dsvdc_push_property(dsvdc_t *handle, const char *dsuid,
     return ret;
 }
 
-size_t dsvdc_property_get_num_properties(dsvdc_property_t *property)
+size_t dsvdc_property_get_num_properties(const dsvdc_property_t *property)
 {
     if (!property)
     {
@@ -688,7 +688,7 @@ size_t dsvdc_property_get_num_properties(dsvdc_property_t *property)
     return property->n_properties;
 }
 
-int dsvdc_property_get_name(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_name(const dsvdc_property_t *property, size_t index,
                             char **name)
 {
     *name = NULL;
@@ -723,7 +723,8 @@ int dsvdc_property_get_name(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_value_type(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_value_type(const dsvdc_property_t *property,
+                                  size_t index,
                                   dsvdc_property_value_t *type)
 {
     *type = DSVDC_PROPERTY_VALUE_NONE;
@@ -781,7 +782,8 @@ int dsvdc_property_get_value_type(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_bool(dsvdc_property_t *property, size_t index, bool *out)
+int dsvdc_property_get_bool(const dsvdc_property_t *property,
+                            size_t index, bool *out)
 {
     dsvdc_property_value_t type;
     int ret = dsvdc_property_get_value_type(property, index, &type);
@@ -801,8 +803,8 @@ int dsvdc_property_get_bool(dsvdc_property_t *property, size_t index, bool *out)
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_uint(dsvdc_property_t *property, size_t index,
-                              uint64_t *out)
+int dsvdc_property_get_uint(const dsvdc_property_t *property, size_t index,
+                            uint64_t *out)
 {
     dsvdc_property_value_t type;
     int ret = dsvdc_property_get_value_type(property, index, &type);
@@ -822,8 +824,8 @@ int dsvdc_property_get_uint(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_int(dsvdc_property_t *property, size_t index,
-                              int64_t *out)
+int dsvdc_property_get_int(const dsvdc_property_t *property, size_t index,
+                           int64_t *out)
 {
     dsvdc_property_value_t type;
     int ret = dsvdc_property_get_value_type(property, index, &type);
@@ -843,7 +845,7 @@ int dsvdc_property_get_int(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_double(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_double(const dsvdc_property_t *property, size_t index,
                               double *out)
 {
     dsvdc_property_value_t type;
@@ -864,7 +866,7 @@ int dsvdc_property_get_double(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_string(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_string(const dsvdc_property_t *property, size_t index,
                               char **out)
 {
     dsvdc_property_value_t type;
@@ -890,7 +892,7 @@ int dsvdc_property_get_string(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_bytes(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_bytes(const dsvdc_property_t *property, size_t index,
                              uint8_t **out, size_t *len)
 {
     *out = NULL;
@@ -923,7 +925,7 @@ int dsvdc_property_get_bytes(dsvdc_property_t *property, size_t index,
 }
 
 
-int dsvdc_property_get_property_by_name(dsvdc_property_t *property,
+int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
                                         const char *name,
                                         dsvdc_property_t **out)
 {
@@ -974,9 +976,8 @@ int dsvdc_property_get_property_by_name(dsvdc_property_t *property,
     return DSVDC_OK;
 }
 
-int dsvdc_property_get_property_by_index(dsvdc_property_t *property,
-                                        size_t index,
-                                        dsvdc_property_t **out)
+int dsvdc_property_get_property_by_index(const dsvdc_property_t *property,
+                                         size_t index, dsvdc_property_t **out)
 {
     *out = NULL;
 

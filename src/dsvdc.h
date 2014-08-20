@@ -321,7 +321,8 @@ void dsvdc_set_control_value_callback(dsvdc_t *handle,
  */
 void dsvdc_set_get_property_callback(dsvdc_t *handle,
         void (*function)(dsvdc_t *handle, const char *dsuid,
-                         dsvdc_property_t *property, dsvdc_property_t *query,
+                         dsvdc_property_t *property,
+                         const dsvdc_property_t *query,
                          void *userdata));
 
 /*! \brief Send pong reply to a ping request.
@@ -579,7 +580,7 @@ int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
  * \param[in] property property handle
  * \return number of available subproperties
  */
-size_t dsvdc_property_get_num_properties(dsvdc_property_t *property);
+size_t dsvdc_property_get_num_properties(const dsvdc_property_t *property);
 
 /* \brief Retrieve the property name.
  *
@@ -589,7 +590,7 @@ size_t dsvdc_property_get_num_properties(dsvdc_property_t *property);
  * freed by the caller
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_name(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_name(const dsvdc_property_t *property, size_t index,
                             char **name);
 
 /* \brief Retrieve the value type of the property.
@@ -603,7 +604,8 @@ int dsvdc_property_get_name(dsvdc_property_t *property, size_t index,
  * \param[out] type, value type of the property
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_value_type(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_value_type(const dsvdc_property_t *property,
+                                  size_t index,
                                   dsvdc_property_value_t *type);
 
 /* \brief Retrieve a boolean property value.
@@ -616,7 +618,7 @@ int dsvdc_property_get_value_type(dsvdc_property_t *property, size_t index,
  * \param[out] out, property value
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_bool(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_bool(const dsvdc_property_t *property, size_t index,
                             bool *out);
 
 /* \brief Retrieve an unsigned integer property value.
@@ -629,8 +631,8 @@ int dsvdc_property_get_bool(dsvdc_property_t *property, size_t index,
  * \param[out] out, property value
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_uint(dsvdc_property_t *property, size_t index,
-                              uint64_t *out);
+int dsvdc_property_get_uint(const dsvdc_property_t *property, size_t index,
+                            uint64_t *out);
 
 /* \brief Retrieve an integer property value.
  *
@@ -642,8 +644,8 @@ int dsvdc_property_get_uint(dsvdc_property_t *property, size_t index,
  * \param[out] out, property value
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_int(dsvdc_property_t *property, size_t index,
-                              int64_t *out);
+int dsvdc_property_get_int(const dsvdc_property_t *property, size_t index,
+                           int64_t *out);
 
 /* \brief Retrieve a double property value.
  *
@@ -655,7 +657,7 @@ int dsvdc_property_get_int(dsvdc_property_t *property, size_t index,
  * \param[out] out, property value
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_double(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_double(const dsvdc_property_t *property, size_t index,
                               double *out);
 
 /* \brief Retrieve a string property value.
@@ -668,7 +670,7 @@ int dsvdc_property_get_double(dsvdc_property_t *property, size_t index,
  * \param[out] out, property value, must be freed by the caller
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_string(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_string(const dsvdc_property_t *property, size_t index,
                               char **out);
 
 /* \brief Retrieve a data array property value.
@@ -683,7 +685,7 @@ int dsvdc_property_get_string(dsvdc_property_t *property, size_t index,
  * caller
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_bytes(dsvdc_property_t *property, size_t index,
+int dsvdc_property_get_bytes(const dsvdc_property_t *property, size_t index,
                              uint8_t **out, size_t *len);
 
 /* \brief Retrieve a copy of the property by the given name.
@@ -698,7 +700,7 @@ int dsvdc_property_get_bytes(dsvdc_property_t *property, size_t index,
  * \param[out] out property copy, must be freed by the caller
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_property_by_name(dsvdc_property_t *property,
+int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
                                         const char *name,
                                         dsvdc_property_t **out);
 
@@ -715,7 +717,7 @@ int dsvdc_property_get_property_by_name(dsvdc_property_t *property,
  * \param[out] out property copy, must be freed by the caller
  * \return error code, indicating if the operation was successful.
  */
-int dsvdc_property_get_property_by_index(dsvdc_property_t *property,
+int dsvdc_property_get_property_by_index(const dsvdc_property_t *property,
                                          size_t index, dsvdc_property_t **out);
 
 #ifdef __cplusplus

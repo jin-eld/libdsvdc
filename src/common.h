@@ -130,7 +130,7 @@ struct dsvdc {
                                  int32_t zone_id, void *userdata);
     void (*vdsm_request_get_property)(dsvdc_t *handle, const char *dsuid,
                                  dsvdc_property_t *property,
-                                 dsvdc_property_t *query, void *userdata);
+                                 const dsvdc_property_t *query, void *userdata);
 };
 
 #endif/*__LIBDSVDC_COMMON_H__*/

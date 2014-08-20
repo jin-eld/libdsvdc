@@ -671,7 +671,7 @@ void dsvdc_set_control_value_callback(dsvdc_t *handle,
 void dsvdc_set_get_property_callback(dsvdc_t *handle,
                         void (*function)(dsvdc_t *handle, const char *dsuid,
                                          dsvdc_property_t *property,
-                                         dsvdc_property_t *query,
+                                         const dsvdc_property_t *query,
                                          void *userdata))
 {
     if (!handle)
