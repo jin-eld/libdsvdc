@@ -584,10 +584,10 @@ void dsvdc_set_remove_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_call_scene_notification_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         int32_t scene, bool force,
-                                         int32_t group, int32_t zone_id,
-                                         void *userdata))
+                        void (*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, int32_t scene,
+                                         bool force, int32_t group,
+                                         int32_t zone_id, void *userdata))
 {
     if (!handle)
     {
@@ -599,9 +599,10 @@ void dsvdc_set_call_scene_notification_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_save_scene_notification_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         int32_t scene, int32_t group,
-                                         int32_t zone_id, void *userdata))
+                        void (*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, int32_t scene,
+                                         int32_t group, int32_t zone_id,
+                                         void *userdata))
 {
     if (!handle)
     {
@@ -613,9 +614,10 @@ void dsvdc_set_save_scene_notification_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_local_priority_notification_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         int32_t scene, int32_t group,
-                                         int32_t zone_id, void *userdata))
+                        void (*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, int32_t scene,
+                                         int32_t group, int32_t zone_id,
+                                         void *userdata))
 {
     if (!handle)
     {
@@ -627,9 +629,9 @@ void dsvdc_set_local_priority_notification_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_call_min_scene_notification_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         int32_t group, int32_t zone_id,
-                                         void *userdata))
+                        void (*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, int32_t group,
+                                         int32_t zone_id, void *userdata))
 {
     if (!handle)
     {
@@ -641,9 +643,9 @@ void dsvdc_set_call_min_scene_notification_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_identify_notification_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         int32_t group, int32_t zone_id,
-                                         void *userdata))
+                        void (*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, int32_t group,
+                                         int32_t zone_id, void *userdata))
 {
     if (!handle)
     {
@@ -655,9 +657,10 @@ void dsvdc_set_identify_notification_callback(dsvdc_t *handle,
 }
 
 void dsvdc_set_control_value_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         int32_t value, int32_t group,
-                                         int32_t zone_id, void *userdata))
+                        void (*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, int32_t value,
+                                         int32_t group, int32_t zone_id,
+                                         void *userdata))
 {
     if (!handle)
     {

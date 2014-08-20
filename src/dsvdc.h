@@ -22,7 +22,7 @@
 /*! \file dsvdc.h
  *  \brief libdSVDC library interface.
  * */
- 
+
 #ifndef __LIBDSVDC_H__
 #define __LIBDSVDC_H__
 
@@ -187,17 +187,17 @@ void dsvdc_set_ping_callback(dsvdc_t *handle,
  * unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
- *                         int force, int32_t group, int32_t zone_id,
- *                         void *userdata) callback function.
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         int32_t scene, int force, int32_t group,
+ *                         int32_t zone_id, void *userdata) callback function.
  *
  * Callback parameters group and zone_id are optional and will have the values
  * of -1 if not set.
  */
 void dsvdc_set_call_scene_notification_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
-                         bool force, int32_t group, int32_t zone_id,
-                         void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, bool force, int32_t group,
+                         int32_t zone_id, void *userdata));
 
 /*! \brief Register "save scene notificatoin" callback.
  *
@@ -206,16 +206,17 @@ void dsvdc_set_call_scene_notification_callback(dsvdc_t *handle,
  * unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
- *                         int32_t group, int32_t zone_id, void *userdata)
- *                         callback function.
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         int32_t scene, int32_t group, int32_t zone_id,
+ *                         void *userdata) callback function.
  *
  * Callback parameters group and zone_id are optional and will have the values
  * of -1 if not set.
  */
 void dsvdc_set_save_scene_notification_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
-                         int32_t group, int32_t zone_id, void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, int32_t group, int32_t zone_id,
+                         void *userdata));
 
 /*! \brief Register "undo scene notificatoin" callback.
  *
@@ -224,16 +225,17 @@ void dsvdc_set_save_scene_notification_callback(dsvdc_t *handle,
  * unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
- *                         int32_t group, int32_t zone_id, void *userdata)
- *                         callback function.
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         int32_t scene, int32_t group, int32_t zone_id,
+ *                         void *userdata) callback function.
  *
  * Callback parameters group and zone_id are optional and will have the values
  * of -1 if not set.
  */
 void dsvdc_set_undo_scene_notification_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
-                         int32_t group, int32_t zone_id, void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, int32_t group, int32_t zone_id,
+                         void *userdata));
 
 /*! \brief Register "set local priority notificatoin" callback.
  *
@@ -242,16 +244,17 @@ void dsvdc_set_undo_scene_notification_callback(dsvdc_t *handle,
  * Pass NULL for the callback function to unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
- *                         int32_t group, int32_t zone_id, void *userdata)
- *                         callback function.
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         int32_t scene, int32_t group, int32_t zone_id,
+ *                         void *userdata) callback function.
  *
  * Callback parameters group and zone_id are optional and will have the values
  * of -1 if not set.
  */
 void dsvdc_set_local_priority_notification_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t scene,
-                         int32_t group, int32_t zone_id, void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, int32_t group, int32_t zone_id,
+                         void *userdata));
 
 
 /*! \brief Register "set call minimum scene notificatoin" callback.
@@ -261,7 +264,7 @@ void dsvdc_set_local_priority_notification_callback(dsvdc_t *handle,
  * Pass NULL for the callback function to unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid,
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
  *                         int32_t group, int32_t zone_id, void *userdata)
  *                         callback function.
  *
@@ -269,8 +272,8 @@ void dsvdc_set_local_priority_notification_callback(dsvdc_t *handle,
  * of -1 if not set.
  */
 void dsvdc_set_call_min_scene_notification_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t group,
-                         int32_t zone_id, void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t group, int32_t zone_id, void *userdata));
 
 /*! \brief Register "identify notificatoin" callback.
  *
@@ -279,7 +282,7 @@ void dsvdc_set_call_min_scene_notification_callback(dsvdc_t *handle,
  * Pass NULL for the callback function to unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid,
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
  *                         int32_t group, int32_t zone_id, void *userdata)
  *                         callback function.
  *
@@ -287,8 +290,8 @@ void dsvdc_set_call_min_scene_notification_callback(dsvdc_t *handle,
  * of -1 if not set.
  */
 void dsvdc_set_identify_notification_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t group,
-                         int32_t zone_id, void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t group, int32_t zone_id, void *userdata));
 
 /*! \brief Register "set control value" callback.
  *
@@ -297,16 +300,17 @@ void dsvdc_set_identify_notification_callback(dsvdc_t *handle,
  * Pass NULL for the callback function to unregister the callback.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, int32_t value,
- *                         int32_t group, int32_t zone_id, void *userdata)
- *                         callback function.
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         int32_t value, int32_t group, int32_t zone_id,
+ *                         void *userdata) callback function.
  *
  * Callback parameters group and zone_id are optional and will have the values
  * of -1 if not set.
  */
 void dsvdc_set_control_value_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, int32_t value,
-                         int32_t group, int32_t zone_id, void *userdata));
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t value, int32_t group, int32_t zone_id,
+                         void *userdata));
 
 /*! \brief Register "get property" callback.
  *
