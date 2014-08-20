@@ -126,6 +126,13 @@ static void dsvdc_property_free_value(Vdcapi__PropertyValue *value)
         {
             free(value->v_string);
         }
+        else if (value->has_v_bytes)
+        {
+            if (value->v_bytes.data)
+            {
+                free(value->v_bytes.data);
+            }
+        }
         free(value);
     }
 }
@@ -518,6 +525,61 @@ int dsvdc_property_add_string(dsvdc_property_t *property, const char *key,
     return DSVDC_OK;
 }
 
+int dsvdc_property_add_bytes(dsvdc_property_t *property, const char *key,
+                              const uint8_t *value, const size_t length)
+{
+    int ret;
+    Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (value == NULL)
+    {
+        log("empty data buffer\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (length == 0)
+    {
+        log("zero length data buffer\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    ret = dsvdc_property_prepare_element(property, key, &element);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    element->value->v_bytes.len = length;
+    element->value->v_bytes.data = (uint8_t *)malloc(sizeof(uint8_t) * length);
+    if (!element->value->v_bytes.data)
+    {
+        log("could not allocate memory for data buffer\n");
+        free(element->value);
+        free(element->name);
+        free(element);
+        return DSVDC_ERR_OUT_OF_MEMORY;
+    }
+    memcpy(element->value->v_bytes.data, value, length);
+    element->value->has_v_bytes = 1;
+
+    ret = dsvdc_property_add(property, element);
+    if (ret != DSVDC_OK)
+    {
+        free(element->value->v_bytes.data);
+        free(element->value);
+        free(element->name);
+        free(element);
+        return ret;
+    }
+
+    return DSVDC_OK;
+}
 int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
                                 dsvdc_property_t **value)
 {

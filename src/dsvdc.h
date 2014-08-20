@@ -538,6 +538,17 @@ int dsvdc_property_add_double(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_string(dsvdc_property_t *property, const char *key,
                               const char *value);
 
+/* \brief Add bytes element to a property.
+ *
+ * \param[in] property property handle
+ * \param[in] key name of the property element
+ * \param[in] value value of the property element (byte array)
+ * \param[in] length length of the byte array
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_property_add_bytes(dsvdc_property_t *property, const char *key,
+                             const uint8_t *value, const size_t length);
+
 /* \brief Add a property to a property.
  *
  * This allows you to construct nested properties. This function takes
