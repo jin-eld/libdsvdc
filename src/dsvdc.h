@@ -19,6 +19,10 @@
     along with digitalSTROM Server. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*! \file dsvdc.h
+ *  \brief libdSVDC library interface.
+ * */
+ 
 #ifndef __LIBDSVDC_H__
 #define __LIBDSVDC_H__
 

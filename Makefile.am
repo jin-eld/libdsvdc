@@ -8,3 +8,8 @@ pkgconfig_DATA = $(top_builddir)/libdsvdc.pc
 BUILT_SOURCES = $(top_builddir)/libdsvdc.pc
 CLEANFILES = $(top_builddir)/libdsvdc.pc
 
+EXTRA_DIST = $(DX_CONFIG)
+
+include aminclude.am
+
+MOSTLYCLEANFILES = $(DX_CLEANFILES)
