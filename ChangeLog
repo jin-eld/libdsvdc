@@ -1,0 +1,6 @@
+libdSvDC
+
+v0.3.0	22.08.2014
+	* updated propety interface
+	* synced proto files with vdSM (repeated dSUIDs)
+	* added doxygen support
