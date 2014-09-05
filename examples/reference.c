@@ -312,6 +312,11 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             dsvdc_property_add_bytes(property, name, deviceIcon16_png,
                                      sizeof(deviceIcon16_png));
         }
+        else if (strcmp(name, "configURL") == 0)
+        {
+            dsvdc_property_add_string(property, name,
+                "https://gitorious.digitalstrom.org/virtual-devices/libdsvdc");
+        }
         free(name);
     }
 
