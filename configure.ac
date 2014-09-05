@@ -85,7 +85,7 @@ AC_PROG_LIBTOOL
 # Checks for libraries.
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h sys/socket.h stdlib.h stdint.h string.h unistd.h time.h ctype.h],
+AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h sys/socket.h stdlib.h stdint.h string.h unistd.h time.h ctype.h getopt.h],
         [], [AC_MSG_ERROR([required system header not found])])
 
 AC_CHECK_HEADER([utlist.h], [],
@@ -102,7 +102,7 @@ AC_TYPE_SSIZE_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([memset select socket strerror tolower],[],
+AC_CHECK_FUNCS([memset select socket strerror tolower getopt_long],[],
                [ AC_MSG_ERROR([required library function not found])] )
 
 AX_PTHREAD([], [ AC_MSG_ERROR([required pthread library not found]) ])

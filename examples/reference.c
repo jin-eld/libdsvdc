@@ -1,5 +1,6 @@
 /*
     Copyright (c) 2013 aizo ag, Zurich, Switzerland
+    Copyright (c) 2014 digitalSTROM AG, Zurich, Switzerland
 
     Author: Sergey 'Jin' Bostandzhyan <jin@dev.digitalstrom.org>
 
@@ -28,6 +29,9 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
+
+#include <getopt.h>
+#define OPTSTR "rhl:c:g:"
 
 #include "dsvdc.h"
 
@@ -81,6 +85,29 @@ void signal_handler(int signum)
     {
         g_shutdown_flag++;
     }
+}
+
+void print_copyright()
+{
+    printf("\nlibdSvDC example application %s\n", VERSION);
+    printf("Copyright (c) 2013 aizo ag, Zurich, Switzerland\n");
+    printf("Copyright (c) 2014 digitalSTROM AG, Zurich, Switzerland\n");
+    printf("libdSvD is free software, covered by the GNU General Public "
+           "License as published\n"
+           "by the Free Software Foundation, version 3 or later.\n\n");
+}
+
+void print_usage(const char *program)
+{
+    printf("Usage: %s [options]\n\
+\n\
+Supported optoins:\n\
+    --random or -r      randomize dSUIDs\n\
+    --library-dsuid     specify library dSUID\n\
+    --container-dsuid   specify virtual container dSUID\n\
+    --device-dsuid      specify device dSUID\n\
+    --help or -h        this help text\n\
+\n", program);
 }
 
 static void hello_cb(dsvdc_t *handle, void *userdata)
@@ -329,13 +356,55 @@ unsigned int random_in_range(unsigned int min, unsigned int max)
     return (max - min + 1) * scaled + min;
 }
 
-int main()
+int main(int argc, char **argv)
 {
     struct sigaction action;
 
     bool ready = false;
     bool announced = false;
     bool printed = false;
+
+    int opt_index = 0;
+    int o;
+    bool random = false;
+
+    struct option long_options[] =
+    {
+        { "random", 0, 0, 'r'           },
+        { "library-dsuid", 1, 0, 'l'    },
+        { "container-dsuid", 1, 0, 'c'  },
+        { "device-dsuid", 1, 0, 'd'     },
+        { "help", 0, 0, 'h'             },
+        { 0, 0, 0, 0                    }
+    };
+
+    print_copyright();
+
+    while (1)
+    {
+        o = getopt_long(argc, argv, OPTSTR, long_options, &opt_index);
+        if (o == -1) break;
+
+        switch (o)
+        {
+            case 'r':
+                random = true;
+                break;
+            case 'l':
+                strncpy(g_lib_dsuid, optarg, sizeof(g_lib_dsuid));
+                break;
+            case 'c':
+                strncpy(g_vdc_dsuid, optarg, sizeof(g_lib_dsuid));
+                break;
+            case 'd':
+                strncpy(g_dev_dsuid, optarg, sizeof(g_lib_dsuid));
+                break;
+            default:
+                print_usage(argv[0]);
+                exit(EXIT_FAILURE);
+                break;
+        }
+    }
 
     memset(&action, 0, sizeof(action));
     action.sa_handler = signal_handler;
@@ -354,14 +423,17 @@ int main()
         return EXIT_FAILURE;
     }
 
-    /* randomize dsuid's so that we can run more than one example on the
-       same machine */
-    srandom(time(NULL));
-    snprintf(g_vdc_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
-             random_in_range(100,999));
-    snprintf(g_dev_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
-             random_in_range(100,999));
-
+    if (random) {
+        /* randomize dsuid's so that we can run more than one example on the
+           same machine */
+        srandom(time(NULL));
+        snprintf(g_lib_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
+                 random_in_range(100,999));
+        snprintf(g_vdc_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
+                 random_in_range(100,999));
+        snprintf(g_dev_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
+                 random_in_range(100,999));
+    }
     printf("libdSvDC/%s example test program, press Ctrl-C to quit\n",
            g_vdc_dsuid);
 
