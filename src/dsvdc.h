@@ -497,7 +497,7 @@ int dsvdc_property_new(dsvdc_property_t **property);
  */
 void dsvdc_property_free(dsvdc_property_t *property);
 
-/* \brief Add an integer element to a property.
+/*!\brief Add an integer element to a property.
  *
  * \param[in] property property handle
  * \param[in] key name of the property element
@@ -507,7 +507,7 @@ void dsvdc_property_free(dsvdc_property_t *property);
 int dsvdc_property_add_int(dsvdc_property_t *property, const char *key,
                            int64_t value);
 
-/* \brief Add an unsigned integer element to a property.
+/*!\brief Add an unsigned integer element to a property.
  *
  * \param[in] property property handle
  * \param[in] key name of the property element
@@ -517,7 +517,7 @@ int dsvdc_property_add_int(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_uint(dsvdc_property_t *property, const char *key,
                             uint64_t value);
 
-/* \brief Add a boolean element to a property.
+/*!\brief Add a boolean element to a property.
  *
  * \param[in] property property handle
  * \param[in] key name of the property element
@@ -527,7 +527,7 @@ int dsvdc_property_add_uint(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_bool(dsvdc_property_t *property, const char *key,
                             bool value);
 
-/* \brief Add a double element to a property.
+/*!\brief Add a double element to a property.
  *
  * \param[in] property property handle
  * \param[in] key name of the property element
@@ -537,7 +537,7 @@ int dsvdc_property_add_bool(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_double(dsvdc_property_t *property, const char *key,
                               double value);
 
-/* \brief Add a string element to a property.
+/*!\brief Add a string element to a property.
  *
  * \param[in] property property handle
  * \param[in] key name of the property element
@@ -547,7 +547,7 @@ int dsvdc_property_add_double(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_string(dsvdc_property_t *property, const char *key,
                               const char *value);
 
-/* \brief Add bytes element to a property.
+/*!\brief Add bytes element to a property.
  *
  * \param[in] property property handle
  * \param[in] key name of the property element
@@ -558,7 +558,7 @@ int dsvdc_property_add_string(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_bytes(dsvdc_property_t *property, const char *key,
                              const uint8_t *value, const size_t length);
 
-/* \brief Add a property to a property.
+/*!\brief Add a property to a property.
  *
  * This allows you to construct nested properties. This function takes
  * ownership of your value pointer, you must not access it anymore after
@@ -575,7 +575,7 @@ int dsvdc_property_add_bytes(dsvdc_property_t *property, const char *key,
 int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
                                 dsvdc_property_t **value);
 
-/* \brief Retrieve the number of properties within a property.
+/*!\brief Retrieve the number of properties within a property.
  *
  * A property can be seen as either a key:value pair or an array of
  * subproperties. This function will return the number of available
@@ -586,7 +586,7 @@ int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
  */
 size_t dsvdc_property_get_num_properties(const dsvdc_property_t *property);
 
-/* \brief Retrieve the property name.
+/*!\brief Retrieve the property name.
  *
  * \param[in] property property handle
  * \param[in] index property index
@@ -597,7 +597,7 @@ size_t dsvdc_property_get_num_properties(const dsvdc_property_t *property);
 int dsvdc_property_get_name(const dsvdc_property_t *property, size_t index,
                             char **name);
 
-/* \brief Retrieve the value type of the property.
+/*!\brief Retrieve the value type of the property.
  *
  * This function allows you to decide which dsvdc_property_get_xxx() you
  * have to use and will also let you know if the property does not provide a
@@ -612,7 +612,7 @@ int dsvdc_property_get_value_type(const dsvdc_property_t *property,
                                   size_t index,
                                   dsvdc_property_value_t *type);
 
-/* \brief Retrieve a boolean property value.
+/*!\brief Retrieve a boolean property value.
  *
  * Use dsvdc_property_get_value_type() in order to determine which value type
  * is provided by the property.
@@ -625,7 +625,7 @@ int dsvdc_property_get_value_type(const dsvdc_property_t *property,
 int dsvdc_property_get_bool(const dsvdc_property_t *property, size_t index,
                             bool *out);
 
-/* \brief Retrieve an unsigned integer property value.
+/*!\brief Retrieve an unsigned integer property value.
  *
  * Use dsvdc_property_get_value_type() in order to determine which value type
  * is provided by the property.
@@ -638,7 +638,7 @@ int dsvdc_property_get_bool(const dsvdc_property_t *property, size_t index,
 int dsvdc_property_get_uint(const dsvdc_property_t *property, size_t index,
                             uint64_t *out);
 
-/* \brief Retrieve an integer property value.
+/*!\brief Retrieve an integer property value.
  *
  * Use dsvdc_property_get_value_type() in order to determine which value type
  * is provided by the property.
@@ -651,7 +651,7 @@ int dsvdc_property_get_uint(const dsvdc_property_t *property, size_t index,
 int dsvdc_property_get_int(const dsvdc_property_t *property, size_t index,
                            int64_t *out);
 
-/* \brief Retrieve a double property value.
+/*!\brief Retrieve a double property value.
  *
  * Use dsvdc_property_get_value_type() in order to determine which value type
  * is provided by the property.
@@ -664,7 +664,7 @@ int dsvdc_property_get_int(const dsvdc_property_t *property, size_t index,
 int dsvdc_property_get_double(const dsvdc_property_t *property, size_t index,
                               double *out);
 
-/* \brief Retrieve a string property value.
+/*!\brief Retrieve a string property value.
  *
  * Use dsvdc_property_get_value_type() in order to determine which value type
  * is provided by the property.
@@ -677,7 +677,7 @@ int dsvdc_property_get_double(const dsvdc_property_t *property, size_t index,
 int dsvdc_property_get_string(const dsvdc_property_t *property, size_t index,
                               char **out);
 
-/* \brief Retrieve a data array property value.
+/*!\brief Retrieve a data array property value.
  *
  * Use dsvdc_property_get_value_type() in order to determine which value type
  * is provided by the property.
@@ -692,7 +692,7 @@ int dsvdc_property_get_string(const dsvdc_property_t *property, size_t index,
 int dsvdc_property_get_bytes(const dsvdc_property_t *property, size_t index,
                              uint8_t **out, size_t *len);
 
-/* \brief Retrieve a copy of the property by the given name.
+/*!\brief Retrieve a copy of the property by the given name.
  *
  * Use this function to access nested properties.
  *
@@ -708,7 +708,7 @@ int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
                                         const char *name,
                                         dsvdc_property_t **out);
 
-/* \brief Retrieve a copy of the property by the given index.
+/*!\brief Retrieve a copy of the property by the given index.
  *
  * Use this function to access nested properties. To determine the number of
  * available properties use dsvdc_property_get_num_properties()
