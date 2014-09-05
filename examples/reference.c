@@ -281,7 +281,14 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         }
         else if (strcmp(name, "name") == 0)
         {
-            dsvdc_property_add_string(property, name, "libdSvDC");
+            if (strcmp(dsuid, g_vdc_dsuid) == 0)
+            {
+                dsvdc_property_add_string(property, name, "libdSvDC container");
+            }
+            else
+            {
+                dsvdc_property_add_string(property, name, "libdSvDC");
+            }
         }
         else if (strcmp(name, "hardwareGuid") == 0)
         {
