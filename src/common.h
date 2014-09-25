@@ -106,32 +106,31 @@ struct dsvdc {
     void (*vdsm_send_bye)(dsvdc_t *handle, const char *dsuid, void *userdata);
     bool (*vdsm_send_remove)(dsvdc_t *handle, const char *dsuid,
                              void *userdata);
-    void (*vdsm_send_call_scene)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t scene, bool force,
+    void (*vdsm_send_call_scene)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t scene, bool force,
                                  int32_t group, int32_t zone_id,
                                  void *userdata);
-    void (*vdsm_send_save_scene)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t scene, int32_t group, int32_t zone_id,
+    void (*vdsm_send_save_scene)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t scene, int32_t group,
+                                 int32_t zone_id, void *userdata);
+    void (*vdsm_send_undo_scene)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t scene, int32_t group,
+                                 int32_t zone_id, void *userdata);
+    void (*vdsm_send_set_local_prio)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t scene, int32_t group,
+                                 int32_t zone_id, void *userdata);
+    void (*vdsm_send_call_min_scene)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t group, int32_t zone_id,
                                  void *userdata);
-    void (*vdsm_send_undo_scene)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t scene, int32_t group, int32_t zone_id,
+    void (*vdsm_send_identify)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t group, int32_t zone_id,
                                  void *userdata);
-    void (*vdsm_send_set_local_prio)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t scene, int32_t group, int32_t zone_id,
-                                 void *userdata);
-    void (*vdsm_send_call_min_scene)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t group, int32_t zone_id,
-                                 void *userdata);
-    void (*vdsm_send_identify)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t group, int32_t zone_id,
-                                 void *userdata);
-    void (*vdsm_send_set_control_value)(dsvdc_t *handle, const char *dsuid,
-                                 int32_t value, int32_t group,
+    void (*vdsm_send_set_control_value)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, int32_t value, int32_t group,
                                  int32_t zone_id, void *userdata);
     void (*vdsm_request_get_property)(dsvdc_t *handle, const char *dsuid,
-                                 const char *name, uint32_t offset,
-                                 uint32_t count, dsvdc_property_t *property,
-                                 void *userdata);
+                                 dsvdc_property_t *property,
+                                 const dsvdc_property_t *query, void *userdata);
 };
 
 #endif/*__LIBDSVDC_COMMON_H__*/

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.66])
-AC_INIT([libdsvdc], [0.2.0], [jin@dev.digitalstrom.org])
+AC_INIT([libdsvdc], [0.3.0], [jin@dev.digitalstrom.org])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([src/dsvdc.c])
 AC_CONFIG_HEADERS([config.h])
@@ -19,7 +19,7 @@ dnl revision: increment if source code has changed, set to zero if current is
 dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
 dnl           interfaces have been removed or changed
-LIBDSVDC_LT_VERSION=1:0:0
+LIBDSVDC_LT_VERSION=3:0:0
 AC_SUBST(LIBDSVDC_LT_VERSION)
 
 
@@ -85,7 +85,7 @@ AC_PROG_LIBTOOL
 # Checks for libraries.
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h sys/socket.h stdlib.h stdint.h string.h unistd.h time.h ctype.h],
+AC_CHECK_HEADERS([arpa/inet.h limits.h netinet/in.h sys/socket.h stdlib.h stdint.h string.h unistd.h time.h ctype.h getopt.h],
         [], [AC_MSG_ERROR([required system header not found])])
 
 AC_CHECK_HEADER([utlist.h], [],
@@ -102,7 +102,7 @@ AC_TYPE_SSIZE_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([memset select socket strerror tolower],[],
+AC_CHECK_FUNCS([memset select socket strerror tolower getopt_long],[],
                [ AC_MSG_ERROR([required library function not found])] )
 
 AX_PTHREAD([], [ AC_MSG_ERROR([required pthread library not found]) ])
@@ -156,6 +156,18 @@ fi
 
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_DISCOVERY, test "x$BUILD_DISCOVERY" = "xyes")
+
+DX_DOT_FEATURE(OFF)
+DX_HTML_FEATURE(ON)
+DX_CHM_FEATURE(OFF)
+DX_CHI_FEATURE(OFF)
+DX_MAN_FEATURE(OFF)
+DX_RTF_FEATURE(OFF)
+DX_XML_FEATURE(OFF)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN($PACKAGE_NAME, doxygen.conf, [doc])
+DX_DOXYGEN_FEATURE(ON)
 
 CFLAGS="$CFLAGS -Wall -Wextra"
 

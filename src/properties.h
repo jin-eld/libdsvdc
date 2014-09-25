@@ -24,14 +24,16 @@
 
 #include <stdint.h>
 
+#include "dsvdc.h"
 #include "messages.pb-c.h"
 
 struct dsvdc_property
 {
     uint32_t message_id;
-    char *name;
-    Vdcapi__Property **properties;
+    Vdcapi__PropertyElement **properties;
     size_t n_properties;
 };
 
+int dsvdc_property_convert_query(Vdcapi__PropertyElement **query,
+                                 size_t n_query, dsvdc_property_t **property);
 #endif//__DSVDC_PROPERTIES_H__

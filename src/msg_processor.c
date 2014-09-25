@@ -204,7 +204,7 @@ int dsvdc_announce_device(dsvdc_t *handle, const char *container_dsuid,
                                         VDCAPI__VDC__SEND_ANNOUNCE_DEVICE__INIT;
 
     submsg.dsuid = (char *)dsuid;
-    submsg.vdcdsuid = (char *)container_dsuid;
+    submsg.vdc_dsuid = (char *)container_dsuid;
 
     msg.type = VDCAPI__TYPE__VDC_SEND_ANNOUNCE_DEVICE;
 
@@ -513,7 +513,8 @@ static void dsvdc_process_call_scene(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_send_call_scene->dsuid)
+    if ((msg->vdsm_send_call_scene->n_dsuid == 0) ||
+        (!msg->vdsm_send_call_scene->dsuid))
     {
         log("received VDSM_NOTIFICATION_CALL_SCENE: missing dSUID!\n");
         return;
@@ -540,9 +541,9 @@ static void dsvdc_process_call_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_call_scene->has_zoneid)
+    if (msg->vdsm_send_call_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_call_scene->zoneid;
+        zone_id = msg->vdsm_send_call_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -550,6 +551,7 @@ static void dsvdc_process_call_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         handle->vdsm_send_call_scene(handle,
                 msg->vdsm_send_call_scene->dsuid,
+                msg->vdsm_send_call_scene->n_dsuid,
                 msg->vdsm_send_call_scene->scene,
                 msg->vdsm_send_call_scene->force,
                 group, zone_id, handle->callback_userdata);
@@ -568,7 +570,8 @@ static void dsvdc_process_save_scene(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_send_save_scene->dsuid)
+    if ((msg->vdsm_send_save_scene->n_dsuid == 0) ||
+        (!msg->vdsm_send_save_scene->dsuid))
     {
         log("received VDSM_NOTIFICATION_SAVE_SCENE: missing dSUID!\n");
         return;
@@ -588,9 +591,9 @@ static void dsvdc_process_save_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_save_scene->has_zoneid)
+    if (msg->vdsm_send_save_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_save_scene->zoneid;
+        zone_id = msg->vdsm_send_save_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -598,6 +601,7 @@ static void dsvdc_process_save_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         handle->vdsm_send_save_scene(handle,
                 msg->vdsm_send_save_scene->dsuid,
+                msg->vdsm_send_save_scene->n_dsuid,
                 msg->vdsm_send_save_scene->scene,
                 group, zone_id, handle->callback_userdata);
     }
@@ -614,7 +618,8 @@ static void dsvdc_process_undo_scene(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_send_undo_scene->dsuid)
+    if ((msg->vdsm_send_undo_scene->n_dsuid == 0) ||
+        (!msg->vdsm_send_undo_scene->dsuid))
     {
         log("received VDSM_NOTIFICATION_UNDO_SCENE: missing dSUID!\n");
         return;
@@ -634,9 +639,9 @@ static void dsvdc_process_undo_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_undo_scene->has_zoneid)
+    if (msg->vdsm_send_undo_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_undo_scene->zoneid;
+        zone_id = msg->vdsm_send_undo_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -644,6 +649,7 @@ static void dsvdc_process_undo_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         handle->vdsm_send_undo_scene(handle,
                 msg->vdsm_send_undo_scene->dsuid,
+                msg->vdsm_send_undo_scene->n_dsuid,
                 msg->vdsm_send_undo_scene->scene,
                 group, zone_id, handle->callback_userdata);
     }
@@ -661,7 +667,8 @@ static void dsvdc_process_set_local_prio(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_send_set_local_prio->dsuid)
+    if ((msg->vdsm_send_set_local_prio->n_dsuid == 0) ||
+        (!msg->vdsm_send_set_local_prio->dsuid))
     {
         log("received VDSM_NOTIFICATION_SET_LOCAL_PRIO: missing dSUID!\n");
         return;
@@ -681,9 +688,9 @@ static void dsvdc_process_set_local_prio(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_set_local_prio->has_zoneid)
+    if (msg->vdsm_send_set_local_prio->has_zone_id)
     {
-        zone_id = msg->vdsm_send_set_local_prio->zoneid;
+        zone_id = msg->vdsm_send_set_local_prio->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -691,6 +698,7 @@ static void dsvdc_process_set_local_prio(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         handle->vdsm_send_set_local_prio(handle,
                 msg->vdsm_send_set_local_prio->dsuid,
+                msg->vdsm_send_set_local_prio->n_dsuid,
                 msg->vdsm_send_set_local_prio->scene,
                 group, zone_id, handle->callback_userdata);
     }
@@ -708,7 +716,8 @@ static void dsvdc_process_call_min_scene(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_send_call_min_scene->dsuid)
+    if ((msg->vdsm_send_call_min_scene->n_dsuid == 0) ||
+        (!msg->vdsm_send_call_min_scene->dsuid))
     {
         log("received VDSM_NOTIFICATION_CALL_MIN_SCENE: missing dSUID!\n");
         return;
@@ -721,9 +730,9 @@ static void dsvdc_process_call_min_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_call_min_scene->has_zoneid)
+    if (msg->vdsm_send_call_min_scene->has_zone_id)
     {
-        zone_id = msg->vdsm_send_call_min_scene->zoneid;
+        zone_id = msg->vdsm_send_call_min_scene->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -731,6 +740,7 @@ static void dsvdc_process_call_min_scene(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         handle->vdsm_send_call_min_scene(handle,
                 msg->vdsm_send_call_min_scene->dsuid,
+                msg->vdsm_send_call_min_scene->n_dsuid,
                 group, zone_id, handle->callback_userdata);
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
@@ -746,7 +756,8 @@ static void dsvdc_process_identify(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_send_identify->dsuid)
+    if ((msg->vdsm_send_identify->n_dsuid == 0) ||
+        (!msg->vdsm_send_identify->dsuid))
     {
         log("received VDSM_NOTIFICATION_IDENTIFY: missing dSUID!\n");
         return;
@@ -759,9 +770,9 @@ static void dsvdc_process_identify(dsvdc_t *handle, Vdcapi__Message *msg)
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_identify->has_zoneid)
+    if (msg->vdsm_send_identify->has_zone_id)
     {
-        zone_id = msg->vdsm_send_identify->zoneid;
+        zone_id = msg->vdsm_send_identify->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -769,6 +780,7 @@ static void dsvdc_process_identify(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         handle->vdsm_send_identify(handle,
                 msg->vdsm_send_identify->dsuid,
+                msg->vdsm_send_identify->n_dsuid,
                 group, zone_id, handle->callback_userdata);
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
@@ -786,7 +798,8 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
         return;
     }
 
-    if (!msg->vdsm_send_set_control_value->dsuid)
+    if ((msg->vdsm_send_set_control_value->n_dsuid == 0) ||
+        (!msg->vdsm_send_set_control_value->dsuid))
     {
         log("received VDSM_NOTIFICATION_SET_CONTROL_VALUE: missing dSUID!\n");
         return;
@@ -805,9 +818,9 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
     }
 
     int32_t zone_id = DEFAULT_UNKNOWN_ZONE;
-    if (msg->vdsm_send_set_control_value->has_zoneid)
+    if (msg->vdsm_send_set_control_value->has_zone_id)
     {
-        zone_id = msg->vdsm_send_set_control_value->zoneid;
+        zone_id = msg->vdsm_send_set_control_value->zone_id;
     }
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -815,6 +828,7 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
     {
         handle->vdsm_send_set_control_value(handle,
                 msg->vdsm_send_set_control_value->dsuid,
+                msg->vdsm_send_set_control_value->n_dsuid,
                 msg->vdsm_send_set_control_value->value,
                 group, zone_id, handle->callback_userdata);
     }
@@ -824,9 +838,6 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
 static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
 {
     log("received VDSM_REQUEST_GET_PROPERTY\n");
-
-    uint32_t offset = 0;
-    uint32_t count = 0;
 
     if (!msg->vdsm_request_get_property)
     {
@@ -841,45 +852,60 @@ static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-    if (!msg->vdsm_request_get_property->name)
+    if (!msg->vdsm_request_get_property->query)
     {
-        log("received VDSM_REQUEST_GET_PROPERTY: missing property name!\n");
+        log("received VDSM_REQUEST_GET_PROPERTY: missing query element!\n");
         return;
     }
 
-    if (msg->vdsm_request_get_property->has_offset)
-    {
-        offset = msg->vdsm_request_get_property->offset;
-    }
-
-    if (msg->vdsm_request_get_property->has_count)
-    {
-        count = msg->vdsm_request_get_property->count;
-    }
-
-    log("VDSM_REQUEST_GET_PROPERTY/%u: dSUID[ %s], name[ %s ], index[ %u ], "
-        "count[ %u ]\n", msg->message_id, msg->vdsm_request_get_property->dsuid,
-        msg->vdsm_request_get_property->name, offset, count);
+    log("VDSM_REQUEST_GET_PROPERTY/%u: dSUID[ %s ]\n",
+        msg->message_id, msg->vdsm_request_get_property->dsuid);
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     if (handle->vdsm_request_get_property)
     {
+        dsvdc_property_t *query = NULL;
         dsvdc_property_t *property = NULL;
-        int ret = dsvdc_property_new(msg->vdsm_request_get_property->name, 0,
-                                     &property);
+        int ret = dsvdc_property_new(&property);
         if (ret == DSVDC_OK)
         {
             property->message_id = msg->message_id;
         }
         else
         {
-            log("VDSM_REQUEST_GET_PROPERTY: could not allocave new property, "
+            log("VDSM_REQUEST_GET_PROPERTY: could not allocate new property, "
                 "error code: %d\n", ret);
+
+            dsvdc_send_error_message(handle,
+                                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                                msg->message_id);
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+            return;
         }
+
+        ret = dsvdc_property_convert_query(
+                        msg->vdsm_request_get_property->query,
+                        msg->vdsm_request_get_property->n_query, &query);
+
+        if (ret != DSVDC_OK)
+        {
+            log("VDSM_REQUEST_GET_PROPERTY: could not allocate new property, "
+                "error code: %d\n", ret);
+
+            dsvdc_send_error_message(handle,
+                                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                                msg->message_id);
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+            return;
+        }
+
         handle->vdsm_request_get_property(handle,
                 msg->vdsm_request_get_property->dsuid,
-                msg->vdsm_request_get_property->name,
-                offset, count, property, handle->callback_userdata);
+                property, query, handle->callback_userdata);
+        if (query)
+        {
+            dsvdc_property_free(query);
+        }
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }

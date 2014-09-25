@@ -32,7 +32,7 @@
 #include "log.h"
 #include "msg_processor.h"
 
-static int dsvdc_property_add(dsvdc_property_t *property, size_t index,
+static int dsvdc_property_add(dsvdc_property_t *property,
                               Vdcapi__PropertyElement *element)
 {
     if (!property)
@@ -41,53 +41,30 @@ static int dsvdc_property_add(dsvdc_property_t *property, size_t index,
         return DSVDC_ERR_PARAM;
     }
 
-    // if index is beyond the allocated area, realloc the first level array
-    if (property->n_properties < (index + 1))
-    {
-        Vdcapi__Property **properties;
-        size_t new_count = (index + 1);
+    Vdcapi__PropertyElement **properties;
+    size_t new_count = (property->n_properties + 1);
 
+    if (!(property->properties))
+    {
+        properties = malloc(sizeof(Vdcapi__PropertyElement *) * new_count);
+    }
+    else
+    {
         properties = realloc(property->properties,
-                             sizeof(Vdcapi__Property *) * new_count);
-        if (!properties)
-        {
-            log("could not allocate memory for additional properties\n");
-            return DSVDC_ERR_OUT_OF_MEMORY;
-        }
-
-        size_t i;
-        for (i = property->n_properties; i < new_count; i++)
-        {
-            properties[i] = NULL;
-        }
-
-        property->properties = properties;
-        property->n_properties = new_count;
+                         sizeof(Vdcapi__PropertyElement *) * new_count);
     }
 
-    if (!property->properties[index])
+    if (!properties)
     {
-        property->properties[index] = malloc(sizeof(Vdcapi__Property));
-        if (!property->properties[index])
-        {
-            log("could not allocate memory for property\n");
-            return DSVDC_ERR_OUT_OF_MEMORY;
-        }
-        vdcapi__property__init(property->properties[index]);
-    }
-
-    Vdcapi__Property *prop = property->properties[index];
-    Vdcapi__PropertyElement **elements = realloc(prop->elements,
-                    sizeof(Vdcapi__PropertyElement *) * (prop->n_elements + 1));
-    if (!elements)
-    {
-        log("could not allocate property elements array\n");
+        log("could not allocate memory for additional properties\n");
         return DSVDC_ERR_OUT_OF_MEMORY;
     }
 
-    prop->elements = elements;
-    prop->elements[prop->n_elements] = element;
-    prop->n_elements = prop->n_elements + 1;
+    properties[new_count - 1] = NULL;
+
+    property->properties = properties;
+    property->n_properties = new_count;
+    property->properties[new_count - 1] = element;
 
     return DSVDC_OK;
 }
@@ -112,125 +89,241 @@ static int dsvdc_property_prepare_element(dsvdc_property_t *property,
     }
     vdcapi__property_element__init(el);
 
-    el->name = strdup(key);
-    if (!el->name)
+    // a property name is set, then there must be a value
+    if (key)
     {
-        log("could not allocate memory for property name\n");
-        free(el);
-        return DSVDC_ERR_OUT_OF_MEMORY;
-    }
+        el->name = strdup(key);
+        if (!el->name)
+        {
+            log("could not allocate memory for property name\n");
+            free(el);
+            return DSVDC_ERR_OUT_OF_MEMORY;
+        }
 
-    Vdcapi__PropertyValue *val = malloc(sizeof(Vdcapi__PropertyValue));
-    if (!val)
-    {
-        log("could not allocate memory for property value\n");
-        free(el->name);
-        free(el);
-        return DSVDC_ERR_OUT_OF_MEMORY;
-    }
-    vdcapi__property_value__init(val);
+        Vdcapi__PropertyValue *val = malloc(sizeof(Vdcapi__PropertyValue));
+        if (!val)
+        {
+            log("could not allocate memory for property value\n");
+            free(el->name);
+            free(el);
+            return DSVDC_ERR_OUT_OF_MEMORY;
+        }
+        vdcapi__property_value__init(val);
 
-    el->value = val;
+        el->value = val;
+    }
 
     *element = el;
 
     return DSVDC_OK;
 }
 
-bool dsvdc_property_is_sane(dsvdc_property_t *property)
+static void dsvdc_property_free_value(Vdcapi__PropertyValue *value)
 {
-    if (!property)
+    if (value)
     {
-        return false;
-    }
-
-    // First level must have no holes, each first level properties must
-    // have the same number of elements. More extensive checks, like
-    // structure of the element arrays (each property must have same
-    // keys in the element array) are not performed.
-    size_t i;
-    size_t elements = 0;
-    for (i = 0; i < property->n_properties; i++)
-    {
-        // "index hole"
-        if (property->properties[i] == NULL)
+        if (value->v_string)
         {
-            log("uninitialized properties / \"holes\" on first level\n");
-            return false;
+            free(value->v_string);
         }
-
-        if (i == 0) // save element count for first property
+        else if (value->has_v_bytes)
         {
-            elements = property->properties[i]->n_elements;
-            if (elements == 0) // empty properties make no sense
+            if (value->v_bytes.data)
             {
-                log("property with zero elements detected\n");
-                return false;
+                free(value->v_bytes.data);
             }
         }
-
-        // properties have different element lenghts, not allowed in spec
-        if (elements != property->properties[i]->n_elements)
-        {
-            log("property element count mismatch\n");
-            return false;
-        }
+        free(value);
     }
-
-    return true;
 }
 
-/* public interface */
-
-int dsvdc_property_new(const char *name, size_t hint,
-                       dsvdc_property_t **property)
+static void dsvdc_property_free_elements(Vdcapi__PropertyElement **elements,
+                                         size_t n_elements)
 {
-    *property = NULL;
-
-    if ((!name) || (strlen(name) == 0))
+    size_t j;
+    if (!elements)
     {
-        log("can't create a nameless property\n");
-        return DSVDC_ERR_PARAM;
+        return;
     }
 
-    dsvdc_property_t *p = malloc(sizeof(struct dsvdc_property));
-    if (!p)
+    for (j = 0; j < n_elements; j++)
     {
-        log("could not allocate new property\n");
-        return DSVDC_ERR_OUT_OF_MEMORY;
-    }
-
-    p->name = strdup(name);
-    if (!p->name)
-    {
-        log("could not allocate memory for property name\n");
-        free(p);
-        return DSVDC_ERR_OUT_OF_MEMORY;
-    }
-
-    if (hint)
-    {
-        p->properties = malloc(sizeof(Vdcapi__Property *) * hint);
-        if (!p->properties)
+        Vdcapi__PropertyElement *el = elements[j];
+        if (!el)
         {
-            log("could not allocate memory for property array\n");
-            free(p->name);
-            free(p);
-            return DSVDC_ERR_OUT_OF_MEMORY;
+            continue;
         }
 
-        size_t i;
-        for (i = 0; i < hint; i++)
+        if (el->name)
         {
-            p->properties[i] = NULL;
+            free(el->name);
+        }
+
+        dsvdc_property_free_value(el->value);
+
+        if (el->n_elements > 0)
+        {
+            dsvdc_property_free_elements(el->elements, el->n_elements);
+        }
+
+        free(el);
+    } // for elements loop
+
+    free(elements);
+}
+static Vdcapi__PropertyValue *dsvdc_property_copy_value(
+                                                Vdcapi__PropertyValue *input)
+{
+    Vdcapi__PropertyValue *val = malloc(sizeof(Vdcapi__PropertyValue));
+    if (!val)
+    {
+        log("could not allocate memory for property value");
+        return NULL;
+    }
+    vdcapi__property_value__init(val);
+    val->has_v_bool = input->has_v_bool;
+    val->v_bool = input->v_bool;
+    val->has_v_uint64 = input->has_v_uint64;
+    val->v_uint64 = input->v_uint64;
+    val->has_v_int64 = input->has_v_int64;
+    val->v_int64 = input->v_int64;
+    val->has_v_double = input->has_v_double;
+    val->v_double = input->v_double;
+    if (input->v_string)
+    {
+        val->v_string = strdup(input->v_string);
+        if (!val->v_string)
+        {
+            log("could not allocate memory for property value");
+            free(val);
+            return NULL;
         }
     }
     else
     {
-        p->properties = NULL;
+        val->v_string = NULL;
+    }
+    val->has_v_bytes = input->has_v_bytes;
+    if (input->has_v_bytes && (input->v_bytes.len > 0))
+    {
+        val->v_bytes.len = input->v_bytes.len;
+        val->v_bytes.data = malloc(sizeof(uint8_t)*val->v_bytes.len);
+        if (!val->v_bytes.data)
+        {
+            log("could not allocate memory for property value");
+            if (val->v_string)
+            {
+                free(val->v_string);
+            }
+            free(val);
+            return NULL;
+        }
+        memcpy(val->v_bytes.data, input->v_bytes.data, val->v_bytes.len);
     }
 
-    p->n_properties = hint;
+    return val;
+}
+
+static Vdcapi__PropertyElement **dsvdc_property_deep_copy(
+                                    Vdcapi__PropertyElement **input,
+                                    size_t n_input)
+{
+    size_t i;
+    Vdcapi__PropertyElement **copy;
+    copy = malloc(sizeof(Vdcapi__PropertyElement) * n_input);
+    if (!copy)
+    {
+        log("could not allocate memory for properties");
+        return NULL;
+    }
+
+    for (i = 0; i < n_input; i++)
+    {
+        Vdcapi__PropertyElement *current_input = input[i];
+        copy[i] = malloc(sizeof(Vdcapi__PropertyElement));
+        if (!copy[i])
+        {
+            log("could not allocate memory for properties");
+            dsvdc_property_free_elements(copy, n_input);
+            return NULL;
+        }
+
+        Vdcapi__PropertyElement *current_copy = copy[i];
+        vdcapi__property_element__init(current_copy);
+
+        if (current_input->name)
+        {
+            current_copy->name = strdup(current_input->name);
+            if (!current_copy->name)
+            {
+                log("could not allocate memory for properties");
+                dsvdc_property_free_elements(copy, n_input);
+                return NULL;
+            }
+        }
+
+        if (current_input->value)
+        {
+            current_copy->value = dsvdc_property_copy_value(
+                                                        current_input->value);
+            if (!current_copy->value)
+            {
+                log("could not allocate memory for properties");
+                dsvdc_property_free_elements(copy, n_input);
+                return NULL;
+            }
+        }
+
+        current_copy->n_elements = current_input->n_elements;
+        if (current_copy->n_elements > 0)
+        {
+            current_copy->elements = dsvdc_property_deep_copy(
+                                                    current_input->elements,
+                                                    current_input->n_elements);
+            if (!current_copy->elements)
+            {
+                log("could not allocate memory for properties");
+                dsvdc_property_free_elements(copy, n_input);
+                return NULL;
+            }
+        }
+    }
+
+    return copy;
+}
+
+int dsvdc_property_convert_query(Vdcapi__PropertyElement **query,
+                                 size_t n_query, dsvdc_property_t **property)
+{
+    int ret;
+    *property = NULL;
+
+    ret = dsvdc_property_new(property);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    (*property)->n_properties = n_query;
+    (*property)->properties = dsvdc_property_deep_copy(query, n_query);
+    return DSVDC_OK;
+}
+
+/* public interface */
+
+int dsvdc_property_new(dsvdc_property_t **property)
+{
+    *property = NULL;
+
+    dsvdc_property_t *p = malloc(sizeof(struct dsvdc_property));
+    if (!p)
+    {
+        log("could not allocate new property instance\n");
+        return DSVDC_ERR_OUT_OF_MEMORY;
+    }
+
+    p->n_properties = 0;
+    p->properties = NULL;
 
     *property = p;
     return DSVDC_OK;
@@ -238,74 +331,32 @@ int dsvdc_property_new(const char *name, size_t hint,
 
 void dsvdc_property_free(dsvdc_property_t *property)
 {
-    Vdcapi__Property **properties;
-
     if (!property)
     {
         return;
     }
 
-    if (property->name)
+    if (property->n_properties > 0)
     {
-        free(property->name);
+        // will walk the properties recursively
+        dsvdc_property_free_elements(property->properties,
+                                     property->n_properties);
     }
-
-    if (property->properties)
-    {
-        properties = property->properties;
-        size_t i, j;
-
-        for (i = 0; i < property->n_properties; i++)
-        {
-            Vdcapi__Property *prop = properties[i];
-            if (!prop)
-            {
-                continue;
-            }
-
-            if (prop->elements)
-            {
-                for (j = 0; j < prop->n_elements; j++)
-                {
-                    Vdcapi__PropertyElement *el = prop->elements[j];
-                    if (!el)
-                    {
-                        continue;
-                    }
-
-                    if (el->name)
-                    {
-                        free(el->name);
-                    }
-
-                    if (el->value)
-                    {
-                        if (el->value->v_string)
-                        {
-                            free(el->value->v_string);
-                        }
-                        free(el->value);
-                    }
-
-                    free(el);
-                } // for elements loop
-                free(prop->elements);
-            }
-
-            free(prop);
-        } // for properties loop
-
-        free(property->properties);
-    } // vdc_response_get_property exists
 
     free(property);
 }
 
-int dsvdc_property_add_int(dsvdc_property_t *property, size_t index,
+int dsvdc_property_add_int(dsvdc_property_t *property,
                            const char *key, int64_t value)
 {
     int ret;
     Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
 
     ret = dsvdc_property_prepare_element(property, key, &element);
     if (ret != DSVDC_OK)
@@ -316,7 +367,7 @@ int dsvdc_property_add_int(dsvdc_property_t *property, size_t index,
     element->value->v_int64 = value;
     element->value->has_v_int64 = 1;
 
-    ret = dsvdc_property_add(property, index, element);
+    ret = dsvdc_property_add(property, element);
     if (ret != DSVDC_OK)
     {
         free(element->value);
@@ -328,11 +379,17 @@ int dsvdc_property_add_int(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_add_uint(dsvdc_property_t *property, size_t index,
+int dsvdc_property_add_uint(dsvdc_property_t *property,
                             const char *key, uint64_t value)
 {
     int ret;
     Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
 
     ret = dsvdc_property_prepare_element(property, key, &element);
     if (ret != DSVDC_OK)
@@ -343,7 +400,7 @@ int dsvdc_property_add_uint(dsvdc_property_t *property, size_t index,
     element->value->v_uint64 = value;
     element->value->has_v_uint64 = 1;
 
-    ret = dsvdc_property_add(property, index, element);
+    ret = dsvdc_property_add(property, element);
     if (ret != DSVDC_OK)
     {
         free(element->value);
@@ -355,11 +412,17 @@ int dsvdc_property_add_uint(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_add_bool(dsvdc_property_t *property, size_t index,
-                           const char *key, bool value)
+int dsvdc_property_add_bool(dsvdc_property_t *property, const char *key,
+                            bool value)
 {
     int ret;
     Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
 
     ret = dsvdc_property_prepare_element(property, key, &element);
     if (ret != DSVDC_OK)
@@ -370,7 +433,7 @@ int dsvdc_property_add_bool(dsvdc_property_t *property, size_t index,
     element->value->v_bool = value;
     element->value->has_v_bool = 1;
 
-    ret = dsvdc_property_add(property, index, element);
+    ret = dsvdc_property_add(property, element);
     if (ret != DSVDC_OK)
     {
         free(element->value);
@@ -382,11 +445,17 @@ int dsvdc_property_add_bool(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_add_double(dsvdc_property_t *property, size_t index,
+int dsvdc_property_add_double(dsvdc_property_t *property,
                               const char *key, double value)
 {
     int ret;
     Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
 
     ret = dsvdc_property_prepare_element(property, key, &element);
     if (ret != DSVDC_OK)
@@ -397,7 +466,7 @@ int dsvdc_property_add_double(dsvdc_property_t *property, size_t index,
     element->value->v_double = value;
     element->value->has_v_double = 1;
 
-    ret = dsvdc_property_add(property, index, element);
+    ret = dsvdc_property_add(property, element);
     if (ret != DSVDC_OK)
     {
         free(element->value);
@@ -409,11 +478,17 @@ int dsvdc_property_add_double(dsvdc_property_t *property, size_t index,
     return DSVDC_OK;
 }
 
-int dsvdc_property_add_string(dsvdc_property_t *property, size_t index,
-                              const char *key, const char *value)
+int dsvdc_property_add_string(dsvdc_property_t *property, const char *key,
+                              const char *value)
 {
     int ret;
     Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
 
     if (value == NULL)
     {
@@ -437,13 +512,115 @@ int dsvdc_property_add_string(dsvdc_property_t *property, size_t index,
         return DSVDC_ERR_OUT_OF_MEMORY;
     }
 
-    ret = dsvdc_property_add(property, index, element);
+    ret = dsvdc_property_add(property, element);
     if (ret != DSVDC_OK)
     {
         free(element->value->v_string);
         free(element->value);
         free(element->name);
         free(element);
+        return ret;
+    }
+
+    return DSVDC_OK;
+}
+
+int dsvdc_property_add_bytes(dsvdc_property_t *property, const char *key,
+                              const uint8_t *value, const size_t length)
+{
+    int ret;
+    Vdcapi__PropertyElement *element = NULL;
+
+    if (!key)
+    {
+        log("missing property name");
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (value == NULL)
+    {
+        log("empty data buffer\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (length == 0)
+    {
+        log("zero length data buffer\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    ret = dsvdc_property_prepare_element(property, key, &element);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    element->value->v_bytes.len = length;
+    element->value->v_bytes.data = (uint8_t *)malloc(sizeof(uint8_t) * length);
+    if (!element->value->v_bytes.data)
+    {
+        log("could not allocate memory for data buffer\n");
+        free(element->value);
+        free(element->name);
+        free(element);
+        return DSVDC_ERR_OUT_OF_MEMORY;
+    }
+    memcpy(element->value->v_bytes.data, value, length);
+    element->value->has_v_bytes = 1;
+
+    ret = dsvdc_property_add(property, element);
+    if (ret != DSVDC_OK)
+    {
+        free(element->value->v_bytes.data);
+        free(element->value);
+        free(element->name);
+        free(element);
+        return ret;
+    }
+
+    return DSVDC_OK;
+}
+int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
+                                dsvdc_property_t **value)
+{
+    int ret;
+    Vdcapi__PropertyElement *element = NULL;
+
+    if (*value == NULL)
+    {
+        log("missing value property\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    ret = dsvdc_property_prepare_element(property, NULL, &element);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (name)
+    {
+        element->name = strdup(name);
+        if (!element->name)
+        {
+            log("could not allocate memory for element name");
+            free(element);
+            return DSVDC_ERR_OUT_OF_MEMORY;
+        }
+    }
+
+    element->elements = (*value)->properties;
+    element->n_elements = (*value)->n_properties;
+
+    // claim ownership of content and free value property structure
+    (*value)->properties = NULL;
+    (*value)->n_properties = 0;
+    free(*value);
+    *value = NULL;
+
+    ret = dsvdc_property_add(property, element);
+    if (ret != DSVDC_OK)
+    {
         return ret;
     }
 
@@ -457,16 +634,6 @@ int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property)
         log("can't send property response: invalid handle\n");
         dsvdc_property_free(property);
         return DSVDC_ERR_PARAM;
-    }
-
-    if (!dsvdc_property_is_sane(property))
-    {
-        log("property structure sanity checks failed, sending error\n");
-        dsvdc_send_error_message(handle,
-                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
-                property->message_id);
-        dsvdc_property_free(property);
-        return DSVDC_ERR_INVALID_PROPERTY;
     }
 
     Vdcapi__Message reply = VDCAPI__MESSAGE__INIT;
@@ -487,8 +654,8 @@ int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property)
     return ret;
 }
 
-int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
-                        uint32_t offset, dsvdc_property_t *property)
+int dsvdc_push_property(dsvdc_t *handle, const char *dsuid,
+                        dsvdc_property_t *property)
 {
     if (!handle)
     {
@@ -496,18 +663,9 @@ int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
         return DSVDC_ERR_PARAM;
     }
 
-    if (!dsvdc_property_is_sane(property))
-    {
-        log("property structure sanity checks failed, sending error\n");
-        return DSVDC_ERR_INVALID_PROPERTY;
-    }
-
     Vdcapi__Message msg = VDCAPI__MESSAGE__INIT;
     Vdcapi__VdcSendPushProperty submsg = VDCAPI__VDC__SEND_PUSH_PROPERTY__INIT;
     submsg.dsuid = (char *)dsuid;
-    submsg.name = (char *)name;
-    submsg.offset = offset;
-    submsg.has_offset = 1;
 
     submsg.n_properties = property->n_properties;
     submsg.properties = property->properties;
@@ -518,4 +676,349 @@ int dsvdc_push_property(dsvdc_t *handle, const char *dsuid, const char *name,
     int ret = dsvdc_send_message(handle, &msg);
     log("VDCAPI__TYPE__VDC_SEND_PUSH_PROPERTY  sent with code %d\n", ret);
     return ret;
+}
+
+size_t dsvdc_property_get_num_properties(const dsvdc_property_t *property)
+{
+    if (!property)
+    {
+        return 0;
+    }
+
+    return property->n_properties;
+}
+
+int dsvdc_property_get_name(const dsvdc_property_t *property, size_t index,
+                            char **name)
+{
+    *name = NULL;
+
+    if (!property)
+    {
+        return DSVDC_ERR_INVALID_PROPERTY;
+    }
+
+    if (index >= property->n_properties)
+    {
+        return DSVDC_ERR_PROPERTY_INDEX;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+
+    if (!element)
+    {
+        return DSVDC_ERR_PROPERTY_INDEX;
+    }
+
+    if (element->name)
+    {
+        *name = strdup(element->name);
+        if (!(*name))
+        {
+            log("could not allocate memory for property name\n");
+            return DSVDC_ERR_OUT_OF_MEMORY;
+        }
+    }
+
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_value_type(const dsvdc_property_t *property,
+                                  size_t index,
+                                  dsvdc_property_value_t *type)
+{
+    *type = DSVDC_PROPERTY_VALUE_NONE;
+
+    if (!property)
+    {
+        return DSVDC_ERR_INVALID_PROPERTY;
+    }
+
+    if (index >= property->n_properties)
+    {
+        return DSVDC_ERR_PROPERTY_INDEX;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+
+    if (!element)
+    {
+        return DSVDC_ERR_PROPERTY_INDEX;
+    }
+
+    Vdcapi__PropertyValue *val = element->value;
+
+    if (!val)
+    {
+        return DSVDC_OK;
+    }
+
+    if (val->has_v_bool)
+    {
+        *type = DSVDC_PROPERTY_VALUE_BOOL;
+    }
+    else if (val->has_v_uint64)
+    {
+        *type = DSVDC_PROPERTY_VALUE_UINT64;
+
+    }
+    else if (val->has_v_int64)
+    {
+        *type = DSVDC_PROPERTY_VALUE_INT64;
+    }
+    else if (val->has_v_double)
+    {
+        *type = DSVDC_PROPERTY_VALUE_DOUBLE;
+    }
+    else if (val->v_string)
+    {
+        *type = DSVDC_PROPERTY_VALUE_STRING;
+    }
+    else if (val->v_bytes.len > 0)
+    {
+        *type = DSVDC_PROPERTY_VALUE_BYTES;
+    }
+
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_bool(const dsvdc_property_t *property,
+                            size_t index, bool *out)
+{
+    dsvdc_property_value_t type;
+    int ret = dsvdc_property_get_value_type(property, index, &type);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (type != DSVDC_PROPERTY_VALUE_BOOL)
+    {
+        return DSVDC_ERR_PROPERTY_VALUE_TYPE;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    Vdcapi__PropertyValue *val = element->value;
+    *out = val->v_bool;
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_uint(const dsvdc_property_t *property, size_t index,
+                            uint64_t *out)
+{
+    dsvdc_property_value_t type;
+    int ret = dsvdc_property_get_value_type(property, index, &type);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (type != DSVDC_PROPERTY_VALUE_UINT64)
+    {
+        return DSVDC_ERR_PROPERTY_VALUE_TYPE;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    Vdcapi__PropertyValue *val = element->value;
+    *out = val->v_uint64;
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_int(const dsvdc_property_t *property, size_t index,
+                           int64_t *out)
+{
+    dsvdc_property_value_t type;
+    int ret = dsvdc_property_get_value_type(property, index, &type);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (type != DSVDC_PROPERTY_VALUE_INT64)
+    {
+        return DSVDC_ERR_PROPERTY_VALUE_TYPE;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    Vdcapi__PropertyValue *val = element->value;
+    *out = val->v_int64;
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_double(const dsvdc_property_t *property, size_t index,
+                              double *out)
+{
+    dsvdc_property_value_t type;
+    int ret = dsvdc_property_get_value_type(property, index, &type);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (type != DSVDC_PROPERTY_VALUE_DOUBLE)
+    {
+        return DSVDC_ERR_PROPERTY_VALUE_TYPE;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    Vdcapi__PropertyValue *val = element->value;
+    *out = val->v_double;
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_string(const dsvdc_property_t *property, size_t index,
+                              char **out)
+{
+    dsvdc_property_value_t type;
+    int ret = dsvdc_property_get_value_type(property, index, &type);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (type != DSVDC_PROPERTY_VALUE_STRING)
+    {
+        return DSVDC_ERR_PROPERTY_VALUE_TYPE;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    Vdcapi__PropertyValue *val = element->value;
+    *out = strdup(val->v_string);
+    if (!(*out))
+    {
+        log("could not allocate memory for string property");
+        return DSVDC_ERR_OUT_OF_MEMORY;
+    }
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_bytes(const dsvdc_property_t *property, size_t index,
+                             uint8_t **out, size_t *len)
+{
+    *out = NULL;
+    *len = 0;
+
+    dsvdc_property_value_t type;
+    int ret = dsvdc_property_get_value_type(property, index, &type);
+    if (ret != DSVDC_OK)
+    {
+        return ret;
+    }
+
+    if (type != DSVDC_PROPERTY_VALUE_BYTES)
+    {
+        return DSVDC_ERR_PROPERTY_VALUE_TYPE;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    Vdcapi__PropertyValue *val = element->value;
+    *out = malloc(sizeof(uint8_t) * val->v_bytes.len);
+    if (!(*out))
+    {
+        log("could not allocate memory for bytes property");
+        return DSVDC_ERR_OUT_OF_MEMORY;
+    }
+
+    memcpy(*out, val->v_bytes.data, val->v_bytes.len);
+    *len = val->v_bytes.len;
+    return DSVDC_OK;
+}
+
+
+int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
+                                        const char *name,
+                                        dsvdc_property_t **out)
+{
+    size_t i;
+    *out = NULL;
+
+    dsvdc_property_t *prop = NULL;
+
+    if (!property)
+    {
+        return DSVDC_ERR_INVALID_PROPERTY;
+    }
+
+    for (i = 0; i < property->n_properties; i++)
+    {
+        Vdcapi__PropertyElement *element = property->properties[i];
+        if (!element)
+        {
+            continue;
+        }
+
+        if (strcmp(name, element->name) == 0)
+        {
+            prop = malloc(sizeof(dsvdc_property_t));
+            if (!prop)
+            {
+                log("could not allocate memory for property");
+                return DSVDC_ERR_OUT_OF_MEMORY;
+            }
+            prop->properties = NULL;
+            prop->n_properties = element->n_elements;
+            if (prop->n_properties > 0)
+            {
+                prop->properties = dsvdc_property_deep_copy(element->elements,
+                                                           element->n_elements);
+                if (!prop->properties)
+                {
+                    free(prop);
+                    return DSVDC_ERR_OUT_OF_MEMORY;
+                }
+            }
+            break;
+        }
+    }
+
+    *out = prop;
+
+    return DSVDC_OK;
+}
+
+int dsvdc_property_get_property_by_index(const dsvdc_property_t *property,
+                                         size_t index, dsvdc_property_t **out)
+{
+    *out = NULL;
+
+    dsvdc_property_t *prop = NULL;
+
+    if (!property)
+    {
+        return DSVDC_ERR_INVALID_PROPERTY;
+    }
+
+    if (index >= property->n_properties)
+    {
+        return DSVDC_ERR_PROPERTY_INDEX;
+    }
+
+    Vdcapi__PropertyElement *element = property->properties[index];
+    if (!element)
+    {
+        return DSVDC_ERR_PROPERTY_INDEX;
+    }
+
+    prop = malloc(sizeof(dsvdc_property_t));
+    if (!prop)
+    {
+        log("could not allocate memory for property");
+        return DSVDC_ERR_OUT_OF_MEMORY;
+    }
+    prop->properties = NULL;
+    prop->n_properties = element->n_elements;
+    if (prop->n_properties > 0)
+    {
+        prop->properties = dsvdc_property_deep_copy(element->elements,
+                                                   element->n_elements);
+        if (!prop->properties)
+        {
+            free(prop);
+            return DSVDC_ERR_OUT_OF_MEMORY;
+        }
+    }
+
+    *out = prop;
+
+    return DSVDC_OK;
 }
