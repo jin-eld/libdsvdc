@@ -45,7 +45,7 @@
 #define SUPPORTED_API_VERSION   2
 
 /* length of a dSUID as string (not containing NULL terminator) */
-#define DSUID_LENGTH            24
+#define DSUID_LENGTH            34
 
 /* max time to wait for a socket to become ready when sending a messsage */
 #define SOCKET_WRITE_TIMEOUT    2 /* seconds */
