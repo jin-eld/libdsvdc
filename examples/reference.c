@@ -29,11 +29,13 @@
 #include <signal.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 #include <getopt.h>
 #define OPTSTR "rhl:c:g:"
 
 #include "dsvdc.h"
+#include "common.h"
 
 static int g_shutdown_flag = 0;
 /* "library" dsuid is currently unused in the vdsm */
@@ -118,13 +120,25 @@ static void hello_cb(dsvdc_t *handle, void *userdata)
     *ready = true;
 }
 
+static bool dsuid_compare(const char *dsuid, const char *ref_dsuid)
+{
+    size_t ctr;
+    for (ctr = 0; ctr < DSUID_LENGTH; ++ctr) {
+        if (dsuid[ctr] != toupper(ref_dsuid[ctr])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void ping_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     int ret;
     (void)userdata;
     printf("received ping for device %s\n", dsuid);
-    if ((strcmp(dsuid, g_vdc_dsuid) == 0) ||
-        (strcmp(dsuid, g_dev_dsuid) == 0))
+    if (dsuid_compare(dsuid, g_lib_dsuid) ||
+        dsuid_compare(dsuid, g_vdc_dsuid) ||
+        dsuid_compare(dsuid, g_dev_dsuid))
     {
         ret = dsvdc_send_pong(handle, dsuid);
         printf("sent pong for device %s / return code %d\n", dsuid, ret);
