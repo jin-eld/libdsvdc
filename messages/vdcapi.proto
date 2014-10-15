@@ -82,8 +82,7 @@ message vdc_ResponseGetProperty {
 // expects generic response
 message vdsm_RequestSetProperty {
     optional string dSUID = 1;
-    optional bool preload = 2 [ default = false ]; // HACK: to be discussed
-    repeated PropertyElement properties = 3;
+    repeated PropertyElement properties = 2;
 }
 
 message vdsm_SendPing {
