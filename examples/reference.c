@@ -335,9 +335,33 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         {
             dsvdc_property_add_string(property, name, "macaddress:A8:99:5C:00:0A:BA");
         }
-        else if (strcmp(name, "modelGuid") == 0)
+        else if (strcmp(name, "hardwareModelGuid") == 0)
         {
             dsvdc_property_add_string(property, name, "gs1:0100000");
+        }
+        else if (strcmp(name, "modelUID") == 0)
+        {
+            dsvdc_property_add_string(property, name, "libdsvdc:reference");
+        }
+        else if (strcmp(name, "modelFeatures") == 0)
+        {
+            dsvdc_property_t *reply;
+            ret  = dsvdc_property_new(&reply);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate reply property for %s\n", name);
+                free(name);
+                continue;
+            }
+
+            dsvdc_property_add_bool(reply, "dontcare", true);
+            dsvdc_property_add_bool(reply, "blink", true);
+            dsvdc_property_add_bool(reply, "ledauto", true);
+            dsvdc_property_add_bool(reply, "transt", true);
+            dsvdc_property_add_bool(reply, "outmode", true);
+            dsvdc_property_add_bool(reply, "outvalue8", true);
+
+            dsvdc_property_add_property(property, name, &reply);
         }
         else if (strcmp(name, "type") == 0)
         {
