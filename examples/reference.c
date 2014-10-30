@@ -343,6 +343,11 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         {
             dsvdc_property_add_string(property, name, "libdsvdc:reference");
         }
+        else if ((strcmp(name, "modelVersion") == 0) ||
+                 (strcmp(name, "hardwareVersion") == 0))
+        {
+            dsvdc_property_add_string(property, name, VERSION);
+        }
         else if (strcmp(name, "modelFeatures") == 0)
         {
             dsvdc_property_t *reply;
