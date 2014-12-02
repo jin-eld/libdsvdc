@@ -84,6 +84,7 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
     inst->vdsm_send_identify = NULL;
     inst->vdsm_send_set_control_value = NULL;
     inst->vdsm_request_get_property = NULL;
+    inst->vdsm_send_output_channel_value = NULL;
 
     if (pthread_mutexattr_init(&attr) != 0)
     {
@@ -205,6 +206,7 @@ static void dsvdc_cleanup_handle(dsvdc_t *handle)
     handle->vdsm_send_call_min_scene = NULL;
     handle->vdsm_send_identify = NULL;
     handle->vdsm_send_set_control_value = NULL;
+    handle->vdsm_send_output_channel_value = NULL;
     handle->callback_userdata = NULL;
 
     if (handle->vdsm_push_uri)
@@ -668,6 +670,21 @@ void dsvdc_set_control_value_callback(dsvdc_t *handle,
     }
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     handle->vdsm_send_set_control_value = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
+void dsvdc_set_output_channel_value_callback(dsvdc_t *handle,
+                        void(*function)(dsvdc_t *handle, char **dsuid,
+                                         size_t n_dsuid, bool apply,
+                                         int32_t channel, double value,
+                                         void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_send_output_channel_value = function;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
