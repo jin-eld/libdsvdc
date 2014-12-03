@@ -312,6 +312,23 @@ void dsvdc_set_control_value_callback(dsvdc_t *handle,
                          int32_t value, int32_t group, int32_t zone_id,
                          void *userdata));
 
+/*! \brief Register "set channel value" callback.
+ *
+ * The callback function will be called each time a
+ * VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE message is received from the vdSM.
+ * Pass NULL for the callback function to unregister the callback.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         bool apply, int32_t channel, double value,
+ *                         void *userdata) callback function.
+ */
+void dsvdc_set_output_channel_value_callback(dsvdc_t *handle,
+        void(*function) (dsvdc_t *handle, char **dsuid,
+                         size_t n_dsuid, bool apply,
+                         int32_t channel, double value,
+                         void *userdata));
+
 /*! \brief Register "get property" callback.
  *
  * The callback function will be called each time a

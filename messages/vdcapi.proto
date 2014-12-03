@@ -157,3 +157,10 @@ message vdc_SendPushProperty {
     repeated PropertyElement properties = 2;
 }
 
+message vdsm_NotificationSetOutputChannelValue {
+    repeated string dSUID = 1;
+    optional bool apply_now = 2 [ default = true ];
+    optional int32 channel = 3;
+    optional double value = 4;
+}
+
