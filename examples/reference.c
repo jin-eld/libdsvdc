@@ -404,6 +404,49 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
     dsvdc_send_property_response(handle, property);
 }
 
+static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t scene,
+                         bool force, int32_t group, int32_t zone_id, void *userdata)
+{
+    (void) handle;
+    (void) group;
+    (void) zone_id;
+    (void)userdata;
+    size_t n;
+
+    for(n = 0; n < n_dsuid; n++)
+    {
+        printf("received %scall scene for device %s\n", force?"forced ":"", *dsuid);
+    }
+
+    switch (scene)
+    {
+        case 0:
+            printf("call scene off\n");
+            break;
+        case 5:
+            printf("call scene 1\n");
+            break;
+        case 17:
+            printf("call scene 2\n");
+            break;
+        case 18:
+            printf("call scene 3\n");
+            break;
+        case 19:
+            printf("call scene 4\n");
+            break;
+        case 11:
+            printf("call dec\n");
+            break;
+        case 12:
+            printf("call inc\n");
+            break;
+        default:
+            printf("scene %d not handled\n", scene);
+            break;
+    }
+}
+
 unsigned int random_in_range(unsigned int min, unsigned int max)
 {
     double scaled = (double)random()/RAND_MAX;
@@ -505,6 +548,7 @@ int main(int argc, char **argv)
     dsvdc_set_ping_callback(handle, ping_cb);
     dsvdc_set_bye_callback(handle, bye_cb);
     dsvdc_set_get_property_callback(handle, getprop_cb);
+    dsvdc_set_call_scene_notification_callback(handle, callscene_cb);
 
     int count = 0;
     while(!g_shutdown_flag)
