@@ -302,6 +302,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         else if (strcmp(name, "outputSettings") == 0)
         {
             dsvdc_property_t *reply;
+            dsvdc_property_t *groups;
             ret  = dsvdc_property_new(&reply);
             if (ret != DSVDC_OK)
             {
@@ -309,8 +310,18 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                 free(name);
                 continue;
             }
+            ret  = dsvdc_property_new(&groups);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate groups property for %s\n", name);
+                dsvdc_property_free(reply);
+                free(name);
+                continue;
+            }
 
-            dsvdc_property_add_uint(reply, "group", 1);
+            dsvdc_property_add_bool(groups, "0", true);
+            dsvdc_property_add_bool(groups, "1", true);
+            dsvdc_property_add_property(reply, "groups", &groups);
             dsvdc_property_add_uint(reply, "mode", 1);
 
             dsvdc_property_add_property(property, name, &reply);
