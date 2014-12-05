@@ -112,10 +112,11 @@ Supported optoins:\n\
 \n", program);
 }
 
-static void hello_cb(dsvdc_t *handle, void *userdata)
+static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     (void)handle;
-    printf("Hello callback triggered, we are ready\n");
+    printf("Hello callback triggered, we are ready. "
+           "Connected to vdsm %s\n", dsuid);
     bool *ready = (bool *)userdata;
     *ready = true;
 }
@@ -302,6 +303,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         else if (strcmp(name, "outputSettings") == 0)
         {
             dsvdc_property_t *reply;
+            dsvdc_property_t *groups;
             ret  = dsvdc_property_new(&reply);
             if (ret != DSVDC_OK)
             {
@@ -309,8 +311,18 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                 free(name);
                 continue;
             }
+            ret  = dsvdc_property_new(&groups);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate groups property for %s\n", name);
+                dsvdc_property_free(reply);
+                free(name);
+                continue;
+            }
 
-            dsvdc_property_add_uint(reply, "group", 1);
+            dsvdc_property_add_bool(groups, "0", true);
+            dsvdc_property_add_bool(groups, "1", true);
+            dsvdc_property_add_property(reply, "groups", &groups);
             dsvdc_property_add_uint(reply, "mode", 1);
 
             dsvdc_property_add_property(property, name, &reply);
@@ -391,6 +403,49 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
     }
 
     dsvdc_send_property_response(handle, property);
+}
+
+static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t scene,
+                         bool force, int32_t group, int32_t zone_id, void *userdata)
+{
+    (void) handle;
+    (void) group;
+    (void) zone_id;
+    (void)userdata;
+    size_t n;
+
+    for(n = 0; n < n_dsuid; n++)
+    {
+        printf("received %scall scene for device %s\n", force?"forced ":"", *dsuid);
+    }
+
+    switch (scene)
+    {
+        case 0:
+            printf("call scene off\n");
+            break;
+        case 5:
+            printf("call scene 1\n");
+            break;
+        case 17:
+            printf("call scene 2\n");
+            break;
+        case 18:
+            printf("call scene 3\n");
+            break;
+        case 19:
+            printf("call scene 4\n");
+            break;
+        case 11:
+            printf("call dec\n");
+            break;
+        case 12:
+            printf("call inc\n");
+            break;
+        default:
+            printf("scene %d not handled\n", scene);
+            break;
+    }
 }
 
 unsigned int random_in_range(unsigned int min, unsigned int max)
@@ -494,6 +549,7 @@ int main(int argc, char **argv)
     dsvdc_set_ping_callback(handle, ping_cb);
     dsvdc_set_bye_callback(handle, bye_cb);
     dsvdc_set_get_property_callback(handle, getprop_cb);
+    dsvdc_set_call_scene_notification_callback(handle, callscene_cb);
 
     int count = 0;
     while(!g_shutdown_flag)

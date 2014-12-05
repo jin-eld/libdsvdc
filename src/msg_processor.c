@@ -36,6 +36,10 @@
 #include "log.h"
 #include "properties.h"
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
 {
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -146,6 +150,11 @@ void dsvdc_send_error_message(dsvdc_t *handle, Vdcapi__ResultCode code,
     dsvdc_send_message(handle, &msg);
 }
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
+
+/* public interface */
 int dsvdc_announce_container(dsvdc_t *handle, const char *dsuid, void *arg,
                              void (*function)(dsvdc_t *handle, int code,
                                               void *arg, void *userdata))
@@ -326,6 +335,11 @@ int dsvdc_device_vanished(dsvdc_t *handle, const char *dsuid)
     log("VDC_SEND_VANISH sent with code %d\n", ret);
     return ret;
 }
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 /* private functions */
 
 static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
@@ -384,7 +398,8 @@ static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     if ((ret == DSVDC_OK) && (handle->vdsm_request_hello))
     {
-        handle->vdsm_request_hello(handle, handle->callback_userdata);
+        handle->vdsm_request_hello(handle, handle->vdsm_dsuid,
+                                   handle->callback_userdata);
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
@@ -835,6 +850,57 @@ static void dsvdc_process_set_control_value(dsvdc_t *handle,
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
+static void dsvdc_process_set_output_channel_value(dsvdc_t *handle, Vdcapi__Message *msg)
+{
+    log("received VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE\n");
+
+    if (!msg->vdsm_send_output_channel_value)
+    {
+      log("received VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE message type, "
+          "but data is missing!\n");
+      return;
+    }
+
+    if ((msg->vdsm_send_output_channel_value->n_dsuid == 0) ||
+        (!msg->vdsm_send_output_channel_value->dsuid))
+    {
+      log("received VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE: missing dSUID!\n");
+      return;
+    }
+
+    if (!msg->vdsm_send_output_channel_value->has_channel)
+    {
+        log("received VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE: missing channel!\n");
+        return;
+    }
+
+    if (!msg->vdsm_send_output_channel_value->has_value)
+    {
+        log("received VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE: missing value!\n");
+        return;
+    }
+
+    if (!msg->vdsm_send_output_channel_value->has_apply_now)
+    {
+        log("received VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE: missing apply_now!\n");
+        return;
+    }
+
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    if (handle->vdsm_send_output_channel_value)
+    {
+        handle->vdsm_send_output_channel_value(handle,
+                msg->vdsm_send_output_channel_value->dsuid,
+                msg->vdsm_send_output_channel_value->n_dsuid,
+                msg->vdsm_send_output_channel_value->apply_now,
+                msg->vdsm_send_output_channel_value->channel,
+                msg->vdsm_send_output_channel_value->value,
+                handle->callback_userdata);
+    }
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
+
 static void dsvdc_process_get_property(dsvdc_t *handle, Vdcapi__Message *msg)
 {
     log("received VDSM_REQUEST_GET_PROPERTY\n");
@@ -1030,6 +1096,10 @@ void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
             dsvdc_process_set_control_value(handle, msg);
             break;
 
+        case VDCAPI__TYPE__VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE:
+            dsvdc_process_set_output_channel_value(handle, msg);
+            break;
+
         case VDCAPI__TYPE__GENERIC_RESPONSE:
             dsvdc_process_generic_response(handle, msg);
             break;
@@ -1041,3 +1111,6 @@ void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
     vdcapi__message__free_unpacked(msg, NULL);
 }
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif

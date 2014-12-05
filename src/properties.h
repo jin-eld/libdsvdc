@@ -27,6 +27,10 @@
 #include "dsvdc.h"
 #include "messages.pb-c.h"
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 struct dsvdc_property
 {
     uint32_t message_id;
@@ -36,4 +40,9 @@ struct dsvdc_property
 
 int dsvdc_property_convert_query(Vdcapi__PropertyElement **query,
                                  size_t n_query, dsvdc_property_t **property);
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
+
 #endif//__DSVDC_PROPERTIES_H__

@@ -121,10 +121,11 @@ bool dsvdc_is_connected(dsvdc_t *handle);
  *
  * The callback parameters are:
  * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
+ * \param[in] dsuid dSUID of the connecting vdsm.
  * \param[in] userdata userdata pointer that was passed to dsvdc_new().
  */
 void dsvdc_set_hello_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, void *userdata));
+        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
 
 /*! \brief Register "bye" callback.
  *
@@ -310,6 +311,23 @@ void dsvdc_set_identify_notification_callback(dsvdc_t *handle,
 void dsvdc_set_control_value_callback(dsvdc_t *handle,
         void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
                          int32_t value, int32_t group, int32_t zone_id,
+                         void *userdata));
+
+/*! \brief Register "set channel value" callback.
+ *
+ * The callback function will be called each time a
+ * VDSM_NOTIFICATION_SET_OUTPUT_CHANNEL_VALUE message is received from the vdSM.
+ * Pass NULL for the callback function to unregister the callback.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+ *                         bool apply, int32_t channel, double value,
+ *                         void *userdata) callback function.
+ */
+void dsvdc_set_output_channel_value_callback(dsvdc_t *handle,
+        void(*function) (dsvdc_t *handle, char **dsuid,
+                         size_t n_dsuid, bool apply,
+                         int32_t channel, double value,
                          void *userdata));
 
 /*! \brief Register "get property" callback.
@@ -723,6 +741,7 @@ int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
  */
 int dsvdc_property_get_property_by_index(const dsvdc_property_t *property,
                                          size_t index, dsvdc_property_t **out);
+
 
 #ifdef __cplusplus
 }

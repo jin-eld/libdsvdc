@@ -22,11 +22,19 @@
 #ifndef __DSVDC_LOG_H__
 #define __DSVDC_LOG_H__
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 #ifdef DEBUG
     void dsvdc_log(const char *format, const char *function, ...);
     #define log(format, ...)    dsvdc_log(format, __func__, ## __VA_ARGS__) 
 #else
     #define log(format, ...)
+#endif
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
 #endif
 
 #endif/*__DSVDC_LOG_H__*/

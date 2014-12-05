@@ -35,6 +35,12 @@
 
 #include "dsvdc.h"
 
+/* for some reason -export-symbols-regex had no effect, eventhough the
+   contets of the .exp file were correct */
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 /* search for free ports will start with this value */
 #define DEFAULT_VDC_PORT        49500
 
@@ -101,7 +107,7 @@ struct dsvdc {
 
     /* callbacks */
     void *callback_userdata;
-    void (*vdsm_request_hello)(dsvdc_t *handle, void *userdata);
+    void (*vdsm_request_hello)(dsvdc_t *handle, const char *dsuid, void *userdata);
     void (*vdsm_send_ping)(dsvdc_t *handle, const char *dsuid, void *userdata);
     void (*vdsm_send_bye)(dsvdc_t *handle, const char *dsuid, void *userdata);
     bool (*vdsm_send_remove)(dsvdc_t *handle, const char *dsuid,
@@ -131,7 +137,15 @@ struct dsvdc {
     void (*vdsm_request_get_property)(dsvdc_t *handle, const char *dsuid,
                                  dsvdc_property_t *property,
                                  const dsvdc_property_t *query, void *userdata);
+    void (*vdsm_send_output_channel_value)(dsvdc_t *handle, char **dsuid,
+                                 size_t n_dsuid, bool apply,
+                                 int32_t channel, double value,
+                                 void *userdata);
 };
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
 
 #endif/*__LIBDSVDC_COMMON_H__*/
 
