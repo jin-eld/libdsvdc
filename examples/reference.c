@@ -112,10 +112,11 @@ Supported optoins:\n\
 \n", program);
 }
 
-static void hello_cb(dsvdc_t *handle, void *userdata)
+static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     (void)handle;
-    printf("Hello callback triggered, we are ready\n");
+    printf("Hello callback triggered, we are ready. "
+           "Connected to vdsm %s\n", dsuid);
     bool *ready = (bool *)userdata;
     *ready = true;
 }

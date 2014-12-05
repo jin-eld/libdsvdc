@@ -384,7 +384,8 @@ static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     if ((ret == DSVDC_OK) && (handle->vdsm_request_hello))
     {
-        handle->vdsm_request_hello(handle, handle->callback_userdata);
+        handle->vdsm_request_hello(handle, handle->vdsm_dsuid,
+                                   handle->callback_userdata);
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
