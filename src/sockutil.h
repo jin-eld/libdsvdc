@@ -23,6 +23,10 @@
 #ifndef __SOCKUTIL_H__
 #define __SOCKUTIL_H__
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 enum socket_ops
 {
     socket_ok = 0,
@@ -37,5 +41,9 @@ enum socket_ops
 int sockread(int sockfd, unsigned char *data, size_t len, int timeout,
              size_t *out_bytes_read);
 ssize_t sockwrite(int sockfd, unsigned char *data, size_t len, int timeout);
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
 
 #endif//__SOCKUTIL_H__

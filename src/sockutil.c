@@ -35,6 +35,10 @@
 #include "sockutil.h"
 #include "log.h"
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 int sockread(int sockfd, unsigned char *data, size_t len, int timeout,
              size_t *out_bytes_read)
 {
@@ -229,3 +233,8 @@ ssize_t sockwrite(int sockfd, unsigned char *data, size_t len, int timeout)
 
     return bytes_total;
 }
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
+

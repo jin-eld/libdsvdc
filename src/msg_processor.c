@@ -36,6 +36,10 @@
 #include "log.h"
 #include "properties.h"
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg)
 {
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
@@ -146,6 +150,11 @@ void dsvdc_send_error_message(dsvdc_t *handle, Vdcapi__ResultCode code,
     dsvdc_send_message(handle, &msg);
 }
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
+
+/* public interface */
 int dsvdc_announce_container(dsvdc_t *handle, const char *dsuid, void *arg,
                              void (*function)(dsvdc_t *handle, int code,
                                               void *arg, void *userdata))
@@ -326,6 +335,11 @@ int dsvdc_device_vanished(dsvdc_t *handle, const char *dsuid)
     log("VDC_SEND_VANISH sent with code %d\n", ret);
     return ret;
 }
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 /* private functions */
 
 static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
@@ -1097,3 +1111,6 @@ void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
     vdcapi__message__free_unpacked(msg, NULL);
 }
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif

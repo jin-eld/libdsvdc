@@ -16,6 +16,9 @@ libprotomessages_la_SOURCES = \
 libprotomessages_la_CPPFLAGS = \
                 -I$(top_srcdir)/messages
 
+libprotomessages_la_CFLAGS = \
+                -fvisibility=hidden
+
 messages.pb-c.h: messages.proto
 messages.pb-c.c: messages.proto
 	$(PROTOC) -I . --c_out=. messages.proto

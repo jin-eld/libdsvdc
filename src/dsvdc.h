@@ -742,6 +742,7 @@ int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
 int dsvdc_property_get_property_by_index(const dsvdc_property_t *property,
                                          size_t index, dsvdc_property_t **out);
 
+
 #ifdef __cplusplus
 }
 #endif
