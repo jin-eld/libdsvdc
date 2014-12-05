@@ -35,6 +35,12 @@
 
 #include "dsvdc.h"
 
+/* for some reason -export-symbols-regex had no effect, eventhough the
+   contets of the .exp file were correct */
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 /* search for free ports will start with this value */
 #define DEFAULT_VDC_PORT        49500
 
@@ -136,6 +142,10 @@ struct dsvdc {
                                  int32_t channel, double value,
                                  void *userdata);
 };
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
 
 #endif/*__LIBDSVDC_COMMON_H__*/
 

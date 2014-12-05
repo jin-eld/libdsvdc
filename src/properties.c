@@ -292,6 +292,10 @@ static Vdcapi__PropertyElement **dsvdc_property_deep_copy(
     return copy;
 }
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 int dsvdc_property_convert_query(Vdcapi__PropertyElement **query,
                                  size_t n_query, dsvdc_property_t **property)
 {
@@ -308,6 +312,10 @@ int dsvdc_property_convert_query(Vdcapi__PropertyElement **query,
     (*property)->properties = dsvdc_property_deep_copy(query, n_query);
     return DSVDC_OK;
 }
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
 
 /* public interface */
 

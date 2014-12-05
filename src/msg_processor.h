@@ -27,6 +27,10 @@
 
 #include "messages.pb-c.h"
 
+#if __GNUC__ >= 4
+    #pragma GCC visibility push(hidden)
+#endif
+
 /* sends a message to the vdSM via the connection socket in the handle */
 int dsvdc_send_message(dsvdc_t *handle, Vdcapi__Message *msg);
 
@@ -37,6 +41,11 @@ void dsvdc_send_error_message(dsvdc_t *handle, Vdcapi__ResultCode code,
 /* Receives data buffer containing the protobuf message, attempts to decode it.
  * identifies the message and triggers appropriate callbacks or responses.  */
 void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len);
+
+#if __GNUC__ >= 4
+    #pragma GCC visibility pop
+#endif
+
 
 #endif/*__LIBDSVDC_MSG_PROCESSOR_H__*/
 
