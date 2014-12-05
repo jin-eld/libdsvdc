@@ -121,10 +121,11 @@ bool dsvdc_is_connected(dsvdc_t *handle);
  *
  * The callback parameters are:
  * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
+ * \param[in] dsuid dSUID of the connecting vdsm.
  * \param[in] userdata userdata pointer that was passed to dsvdc_new().
  */
 void dsvdc_set_hello_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, void *userdata));
+        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
 
 /*! \brief Register "bye" callback.
  *

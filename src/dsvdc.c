@@ -535,7 +535,8 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
 }
 
 void dsvdc_set_hello_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, void *userdata))
+                        void (*function)(dsvdc_t *handle, const char *dsuid,
+                                         void *userdata))
 {
     if (!handle)
     {

@@ -101,7 +101,7 @@ struct dsvdc {
 
     /* callbacks */
     void *callback_userdata;
-    void (*vdsm_request_hello)(dsvdc_t *handle, void *userdata);
+    void (*vdsm_request_hello)(dsvdc_t *handle, const char *dsuid, void *userdata);
     void (*vdsm_send_ping)(dsvdc_t *handle, const char *dsuid, void *userdata);
     void (*vdsm_send_bye)(dsvdc_t *handle, const char *dsuid, void *userdata);
     bool (*vdsm_send_remove)(dsvdc_t *handle, const char *dsuid,
