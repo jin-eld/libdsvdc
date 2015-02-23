@@ -14,16 +14,16 @@ libprotomessages_la_SOURCES = \
                 $(BUILT_SOURCES)
 
 libprotomessages_la_CPPFLAGS = \
-                -I$(top_srcdir)/messages
+                -I$(top_builddir)/messages
 
 libprotomessages_la_CFLAGS = \
                 -fvisibility=hidden
 
 messages.pb-c.h: messages.proto
 messages.pb-c.c: messages.proto
-	$(PROTOC) -I . --c_out=. messages.proto
+	$(PROTOC) -I $(top_srcdir)/messages --c_out=$(top_builddir)/messages $(top_srcdir)/messages/messages.proto
 
 vdcapi.pb-c.h: vdcapi.proto
 vdcapi.pb-c.c: vdcapi.proto
-	$(PROTOC) -I . --c_out=. vdcapi.proto
+	$(PROTOC) -I $(top_srcdir)/messages --c_out=$(top_builddir)/messages $(top_srcdir)/messages/vdcapi.proto
 
