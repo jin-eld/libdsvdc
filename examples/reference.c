@@ -31,8 +31,16 @@
 #include <time.h>
 #include <ctype.h>
 
+#include <unistd.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+
 #include <getopt.h>
 #define OPTSTR "rhl:c:g:"
+
+#include <digitalSTROM/dsuid.h>
 
 #include "dsvdc.h"
 #include "common.h"
@@ -89,11 +97,60 @@ void signal_handler(int signum)
     }
 }
 
+void get_network_interface(char *mac, int maxlen)
+{
+    memset(mac, 0, maxlen);
+
+    int sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+    {
+        return;
+    }
+
+    struct if_nameindex *if_name;
+    if_name = if_nameindex();
+    if (if_name == NULL)
+    {
+        close(sock);
+        return;
+    }
+
+    int i;
+    for (i = 0; if_name[i].if_index || if_name[i].if_name != NULL; i++) {
+        struct ifreq ifr;
+        strncpy(ifr.ifr_name, if_name[i].if_name, IFNAMSIZ-1);
+        ifr.ifr_name[IFNAMSIZ-1] = '\0';
+
+        if (strncmp(ifr.ifr_name, "lo", 2) == 0)
+        {
+            continue;
+        }
+
+        if (ioctl(sock, SIOCGIFHWADDR, &ifr) >= 0) {
+            int j, k;
+            for (j = 0, k = 0; j < 6; j++)
+            {
+                k += snprintf(mac + k, maxlen - k - 1, j ? ":%02X" : "%02X",
+                        (int)(unsigned int)(unsigned char) ifr.ifr_hwaddr.sa_data[j]);
+            }
+            if (k < maxlen)
+            {
+                mac[k] = 0;
+            }
+            else {
+                mac[maxlen] = 0;
+            }
+            break;
+        }
+    }
+    if_freenameindex(if_name);
+    close(sock);
+}
+
 void print_copyright()
 {
-    printf("\nlibdSvDC example application %s\n", VERSION);
-    printf("Copyright (c) 2013 aizo ag, Zurich, Switzerland\n");
-    printf("Copyright (c) 2014 digitalSTROM AG, Zurich, Switzerland\n");
+    printf("\nlibdSvDC reference table light device, version %s\n", VERSION);
+    printf("Copyright (c) 2015 digitalSTROM AG, Zurich, Switzerland\n");
     printf("libdSvD is free software, covered by the GNU General Public "
            "License as published\n"
            "by the Free Software Foundation, version 3 or later.\n\n");
@@ -103,7 +160,7 @@ void print_usage(const char *program)
 {
     printf("Usage: %s [options]\n\
 \n\
-Supported optoins:\n\
+Supported options:\n\
     --random or -r      randomize dSUIDs\n\
     --library-dsuid     specify library dSUID\n\
     --container-dsuid   specify virtual container dSUID\n\
@@ -475,6 +532,18 @@ int main(int argc, char **argv)
         { "help", 0, 0, 'h'             },
         { 0, 0, 0, 0                    }
     };
+
+    /* generate a host/mac based dsuid */
+    dsuid_t dsuid;
+    char mac[40];
+    get_network_interface(mac, 32);
+
+    dsuid_generate_v3_from_namespace(DSUID_NS_IEEE_MAC, mac, &dsuid);
+    dsuid_to_string(&dsuid, g_vdc_dsuid);
+
+    strcat(mac, "-0000");
+    dsuid_generate_v3_from_namespace(DSUID_NS_IEEE_MAC, mac, &dsuid);
+    dsuid_to_string(&dsuid, g_dev_dsuid);
 
     print_copyright();
 
