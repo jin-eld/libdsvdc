@@ -45,11 +45,34 @@
 #include "dsvdc.h"
 #include "common.h"
 
-static int g_shutdown_flag = 0;
-/* "library" dsuid is currently unused in the vdsm */
-static char g_lib_dsuid[35] = { "053f848b85bb382198025cea1fd087f100" };
+
+/*
+ * TODO: fill scene table and add persistent storage
+ *
+static uint8_t g_scene_values[128] = {
+        0, 0, 0, 0, 0,
+        100, 0, 0, 0, 0,
+        0, 0, 0, 0, 0,
+        0, 100, 100, 100, 0,
+};
+
+static uint8_t g_scene_config[128] = {
+        0,
+};
+
+static uint8_t g_output_value = 0;
+static uint8_t g_min_dim_value = 5;
+static uint8_t g_dim_step_value = 5;
+static bool g_local_prioritized = false;
+*/
+
+static char g_dev_dsuid[35] = { 0, };
 static char g_vdc_dsuid[35] = { "c38ec6e15c2e35edbde53a37330042f500" };
-static char g_dev_dsuid[35] = { "1bb9eb4200c330698d84a896f916623300" };
+
+/* "library" dsuid is currently unused */
+static char g_lib_dsuid[35] = { "053f848b85bb382198025cea1fd087f100" };
+
+static int g_shutdown_flag = 0;
 
 static const uint8_t deviceIcon16_png[] = {
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -193,13 +216,13 @@ static void ping_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     int ret;
     (void)userdata;
-    printf("received ping for device %s\n", dsuid);
+    printf("ping_cb: received ping for device %s\n", dsuid);
     if (dsuid_compare(dsuid, g_lib_dsuid) ||
         dsuid_compare(dsuid, g_vdc_dsuid) ||
         dsuid_compare(dsuid, g_dev_dsuid))
     {
         ret = dsvdc_send_pong(handle, dsuid);
-        printf("sent pong for device %s / return code %d\n", dsuid, ret);
+        printf("ping_cb: sent pong for device %s / return code %d\n", dsuid, ret);
     }
 }
 
@@ -208,7 +231,7 @@ static void announce_device_cb(dsvdc_t *handle, int code, void *arg,
 {
     (void)handle;
     (void)userdata;
-    printf("got code %d to announcement of device %s\n", code, (char *)arg);
+    printf("announce_device_cb: got code %d to announcement of device %s\n", code, (char *)arg);
 }
 
 static void announce_container_cb(dsvdc_t *handle, int code, void *arg,
@@ -216,13 +239,7 @@ static void announce_container_cb(dsvdc_t *handle, int code, void *arg,
 {
     (void)handle;
     (void)userdata;
-    printf("got code %d to announcement of device %s\n", code, (char *)arg);
-    int ret = dsvdc_announce_device(handle, g_vdc_dsuid, g_dev_dsuid,
-                                    (void *)g_dev_dsuid, announce_device_cb);
-    if (ret != DSVDC_OK)
-    {
-        printf("dsvdc_announce_device returned error %d\n", ret);
-    }
+    printf("announce_container_cb: got code %d to announcement of container %s\n", code, (char *)arg);
 }
 
 static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
@@ -233,6 +250,15 @@ static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
     *ready = false;
 }
 
+static bool remove_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
+{
+    (void)handle;
+    (void)userdata;
+    printf("received remove for dsuid %s\n", dsuid);
+
+    return true;
+}
+
 static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                        dsvdc_property_t *property,
                        const dsvdc_property_t *query,
@@ -241,8 +267,90 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
     (void)userdata;
     int ret;
     size_t i;
-    printf("\n**** get property %s\n",  dsuid);
+    printf("getprop_cb: request for dsuid \"%s\"\n",  dsuid);
 
+    /*
+     * Properties for the VDC
+     */
+    if (strcasecmp(g_vdc_dsuid, dsuid) == 0)
+    {
+        for (i = 0; i < dsvdc_property_get_num_properties(query); i++)
+        {
+            char *name;
+            int ret = dsvdc_property_get_name(query, i, &name);
+            if (ret != DSVDC_OK)
+            {
+                fprintf(stderr, "getprop_cb: error getting property name, abort\n");
+                dsvdc_send_property_response(handle, property);
+                return;
+            }
+            if (!name)
+            {
+                fprintf(stderr, "getprop_cb: not yet handling wildcard properties\n");
+                dsvdc_send_property_response(handle, property);
+                return;
+            }
+            printf("getprop_cb: property name \"%s\"\n", name);
+
+            if (strcmp(name, "hardwareGuid") == 0)
+            {
+              char info[256];
+              char buffer[32];
+              get_network_interface(buffer, 32);
+              strcpy(info, "macaddress:");
+              strcat(info, buffer);
+              dsvdc_property_add_string(property, name, info);
+
+            }
+            else if (strcmp(name, "modelGuid") == 0)
+            {
+              dsvdc_property_add_string(property, name, "[modelGuid]");
+            }
+            else if (strcmp(name, "vendorId") == 0)
+            {
+              dsvdc_property_add_string(property, name, "digitalSTROM");
+            }
+            else if (strcmp(name, "name") == 0)
+            {
+              dsvdc_property_add_string(property, name, "libdSvDC reference application vDC");
+            }
+            else if (strcmp(name, "model") == 0)
+            {
+              dsvdc_property_add_string(property, name, "libdSvDC vDC");
+            }
+            else if (strcmp(name, "type") == 0)
+            {
+                dsvdc_property_add_string(property, name, "vDC");
+            }
+            else if (strcmp(name, "capabilities") == 0)
+            {
+              dsvdc_property_t *reply;
+              ret = dsvdc_property_new(&reply);
+              if (ret != DSVDC_OK) {
+                printf("failed to allocate reply property for %s\n", name);
+                free(name);
+                continue;
+              }
+              dsvdc_property_add_bool(reply, "metering", false);
+            }
+            else if (strcmp(name, "configURL") == 0)
+            {
+              dsvdc_property_add_string(property, name, "https://localhost:11111");
+            }
+            free(name);
+        }
+        dsvdc_send_property_response(handle, property);
+        return;
+    }
+
+    /*
+     * Properties for the VDC
+     */
+    if (strcasecmp(g_dev_dsuid, dsuid) != 0)
+    {
+        printf("getprop_cb: unhandled dsuid \"%s\"\n", dsuid);
+        return;
+    }
 
     for (i = 0; i < dsvdc_property_get_num_properties(query); i++)
     {
@@ -250,17 +358,19 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         ret = dsvdc_property_get_name(query, i, &name);
         if (ret != DSVDC_OK)
         {
+            printf("getprop_cb: error getting property name, abort\n");
             dsvdc_send_property_response(handle, property);
             return;
         }
 
-        if (!name) {
-            printf("not yet handling wildcard properties\n");
+        if (!name)
+        {
+            printf("getprop_cb: empty name, not yet handling wildcard properties\n");
             dsvdc_send_property_response(handle, property);
             return;
         }
 
-        printf("processing property request for %s\n", name);
+        printf("getprop_cb: property name %s\n", name);
 
         if (strcmp(name, "outputDescription") == 0)
         {
@@ -275,10 +385,10 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             /* we have only one output */
 
             /* name of the output */
-            dsvdc_property_add_string(reply, "name", "libdSvDC output");
+            dsvdc_property_add_string(reply, "name", "Reference table light");
 
-            /* output supports on/off modes only */
-            dsvdc_property_add_uint(reply, "function", 0);
+            /* output supports dimming */
+            dsvdc_property_add_uint(reply, "function", 1);
 
             /* output usage: "undefined" */
             dsvdc_property_add_uint(reply, "outputUsage", 0);
@@ -296,7 +406,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         }
         else if (strcmp(name, "buttonInputDescriptions") == 0)
         {
-            dsvdc_property_t *reply;
+            dsvdc_property_t *reply, *bProp;
             ret  = dsvdc_property_new(&reply);
             if (ret != DSVDC_OK)
             {
@@ -304,17 +414,21 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                 free(name);
                 continue;
             }
+            ret  = dsvdc_property_new(&bProp);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate reply button property for %s\n", name);
+                dsvdc_property_free(reply);
+                free(name);
+                continue;
+            }
 
-            /* human readable name/number for the input */
-            dsvdc_property_add_string(reply, "name", "virtual button");
-            dsvdc_property_add_bool(reply, "supportsLocalKeyMode", false);
+            dsvdc_property_add_string(bProp, "name", "keyboard button");
+            dsvdc_property_add_bool(bProp, "supportsLocalKeyMode", true);
+            dsvdc_property_add_uint(bProp, "buttonType", 1);
+            dsvdc_property_add_uint(bProp, "buttonElementID", 0);
 
-            /* type of physical button: single pushbutton */
-            dsvdc_property_add_uint(reply, "buttonType", 1);
-
-            /* element of multi-contact button: center */
-            dsvdc_property_add_uint(reply, "buttonElementID", 0);
-
+            dsvdc_property_add_property(reply, "0", &bProp);
             dsvdc_property_add_property(property, name, &reply);
         }
         else if (strcmp(name, "primaryGroup") == 0)
@@ -324,18 +438,41 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         }
         else if (strcmp(name, "binaryInputDescriptions") == 0)
         {
-
             /* no binary inputs for this device */
-            /* TODO: reply with an element with empty value or skip it? */
         }
         else if (strcmp(name, "sensorDescriptions") == 0)
         {
-            /* no sensor descriptions for this device */
-            /* TODO: reply with an element with empty value or skip it? */
+            dsvdc_property_t *reply, *sProp1, *sProp2;
+            dsvdc_property_new(&reply);
+            dsvdc_property_new(&sProp1);
+            dsvdc_property_new(&sProp2);
+            if (reply == NULL || sProp1 == NULL || sProp2 == NULL)
+            {
+                printf("failed to allocate reply sensor property for %s\n", name);
+                if (reply)  dsvdc_property_free(reply);
+                if (sProp1) dsvdc_property_free(sProp1);
+                if (sProp2) dsvdc_property_free(sProp2);
+                free(name);
+                continue;
+            }
+
+            dsvdc_property_add_string(sProp1, "name", "Energy Meter");
+            dsvdc_property_add_uint(sProp1, "sensorType", 16);
+            dsvdc_property_add_uint(sProp1, "sensorUsage", 0);
+            dsvdc_property_add_double(sProp1, "aliveSignInterval", 300);
+            dsvdc_property_add_property(reply, "0", &sProp1);
+
+            dsvdc_property_add_string(sProp2, "name", "Power");
+            dsvdc_property_add_uint(sProp2, "sensorType", 14);
+            dsvdc_property_add_uint(sProp2, "sensorUsage", 0);
+            dsvdc_property_add_double(sProp2, "aliveSignInterval", 300);
+            dsvdc_property_add_property(reply, "1", &sProp2);
+
+            dsvdc_property_add_property(property, name, &reply);
         }
         else if (strcmp(name, "buttonInputSettings") == 0)
         {
-            dsvdc_property_t *reply;
+            dsvdc_property_t *reply, *bProp;
             ret  = dsvdc_property_new(&reply);
             if (ret != DSVDC_OK)
             {
@@ -343,18 +480,22 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                 free(name);
                 continue;
             }
+            ret  = dsvdc_property_new(&bProp);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate reply button property for %s\n", name);
+                dsvdc_property_free(reply);
+                free(name);
+                continue;
+            }
 
-            dsvdc_property_add_uint(reply, "group", 1);
+            dsvdc_property_add_uint(bProp, "group", 1);
+            dsvdc_property_add_uint(bProp, "function", 5);
+            dsvdc_property_add_uint(bProp, "mode", 0);
+            dsvdc_property_add_bool(bProp, "setsLocalPriority", true);
+            dsvdc_property_add_bool(bProp, "callsPresent", true);
 
-            /* supports on/off modes only */
-            dsvdc_property_add_uint(reply, "function", 0);
-
-            /* mode "standard" */
-            dsvdc_property_add_uint(reply, "mode", 0);
-
-            dsvdc_property_add_bool(reply, "setsLocalPriority", false);
-            dsvdc_property_add_bool(reply, "callsPresent", false);
-
+            dsvdc_property_add_property(reply, "0", &bProp);
             dsvdc_property_add_property(property, name, &reply);
         }
         else if (strcmp(name, "outputSettings") == 0)
@@ -380,29 +521,34 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             dsvdc_property_add_bool(groups, "0", true);
             dsvdc_property_add_bool(groups, "1", true);
             dsvdc_property_add_property(reply, "groups", &groups);
-            dsvdc_property_add_uint(reply, "mode", 1);
+            dsvdc_property_add_uint(reply, "mode", 2);
+            dsvdc_property_add_bool(reply, "pushChanges", true);
 
             dsvdc_property_add_property(property, name, &reply);
         }
         else if (strcmp(name, "channelDescriptions") == 0)
         {
             /* no channel descriptions for this device */
-            /* TODO: reply with an element with empty value or skip it? */
         }
         else if (strcmp(name, "name") == 0)
         {
             if (strcmp(dsuid, g_vdc_dsuid) == 0)
             {
-                dsvdc_property_add_string(property, name, "libdSvDC container");
+                dsvdc_property_add_string(property, name, "Reference libdSvDC");
             }
             else
             {
-                dsvdc_property_add_string(property, name, "libdSvDC");
+                dsvdc_property_add_string(property, name, "Reference Light");
             }
         }
         else if (strcmp(name, "hardwareGuid") == 0)
         {
-            dsvdc_property_add_string(property, name, "macaddress:A8:99:5C:00:0A:BA");
+            char mac[32];
+            char hardwareGuid[64];
+            get_network_interface(mac, 32);
+            strcpy(hardwareGuid, "macaddress:");
+            strcat(hardwareGuid, mac);
+            dsvdc_property_add_string(property, name, hardwareGuid);
         }
         else if (strcmp(name, "hardwareModelGuid") == 0)
         {
@@ -430,21 +576,25 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
 
             dsvdc_property_add_bool(reply, "dontcare", true);
             dsvdc_property_add_bool(reply, "blink", true);
-            dsvdc_property_add_bool(reply, "ledauto", true);
-            dsvdc_property_add_bool(reply, "transt", true);
+            dsvdc_property_add_bool(reply, "ledauto", false);
+            dsvdc_property_add_bool(reply, "transt", false);
             dsvdc_property_add_bool(reply, "outmode", true);
             dsvdc_property_add_bool(reply, "outvalue8", true);
+            dsvdc_property_add_bool(reply, "pushbutton", true);
+            dsvdc_property_add_bool(reply, "pushbdevice", true);
+            dsvdc_property_add_bool(reply, "pushbarea", true);
+            dsvdc_property_add_bool(reply, "pushbadvanced", true);
 
             dsvdc_property_add_property(property, name, &reply);
         }
         else if (strcmp(name, "type") == 0)
         {
-            dsvdc_property_add_string(property, name, "vDC");
+            dsvdc_property_add_string(property, name, "vDSD");
         }
         else if (strcmp(name, "model") == 0)
         {
             dsvdc_property_add_string(property, name,
-                                      "libdSvDC example application");
+                                      "libdSvDC reference application");
         }
         else if (strcmp(name, "deviceIcon16") == 0)
         {
@@ -456,9 +606,12 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             dsvdc_property_add_string(property, name,
                 "https://gitorious.digitalstrom.org/virtual-devices/libdsvdc");
         }
+        else if (strcmp(name, "scenes") == 0)
+        {
+            /* TODO: add scene value/configuration property handling */
+        }
         free(name);
     }
-
     dsvdc_send_property_response(handle, property);
 }
 
@@ -468,10 +621,10 @@ static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t 
     (void) handle;
     (void) group;
     (void) zone_id;
-    (void)userdata;
+    (void) userdata;
     size_t n;
 
-    for(n = 0; n < n_dsuid; n++)
+    for (n = 0; n < n_dsuid; n++)
     {
         printf("received %scall scene for device %s\n", force?"forced ":"", *dsuid);
     }
@@ -479,29 +632,120 @@ static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t 
     switch (scene)
     {
         case 0:
-            printf("call scene off\n");
+            printf("call activity off\n");
             break;
         case 5:
-            printf("call scene 1\n");
+            printf("call activity 1\n");
             break;
         case 17:
-            printf("call scene 2\n");
+            printf("call activity 2\n");
             break;
         case 18:
-            printf("call scene 3\n");
+            printf("call activity 3\n");
             break;
         case 19:
-            printf("call scene 4\n");
+            printf("call activity 4\n");
             break;
         case 11:
-            printf("call dec\n");
+            printf("call activity decrement\n");
             break;
         case 12:
-            printf("call inc\n");
+            printf("call activity increment\n");
+            break;
+        case 13:
+            printf("call activity min\n");
+            break;
+        case 14:
+            printf("call activity max\n");
+            break;
+        case 40:
+            printf("call activity auto-off\n");
+            break;
+        case 50:
+            printf("call activity local-off\n");
+            break;
+        case 51:
+            printf("call activity local-on\n");
+            break;
+        case 65:
+            printf("call activity panic\n");
+            break;
+        case 67:
+            printf("call activity standby\n");
+            break;
+        case 68:
+            printf("call activity deep-off\n");
+            break;
+        case 69:
+            printf("call activity sleeping\n");
+            break;
+        case 70:
+            printf("call activity wakeup\n");
+            break;
+        case 71:
+            printf("call activity present\n");
+            break;
+        case 72:
+            printf("call activity absent\n");
+            break;
+        case 73:
+            printf("call activity door bell\n");
             break;
         default:
             printf("scene %d not handled\n", scene);
             break;
+    }
+
+    /*
+     * TODO: implement scene - output state handling
+     *
+    if (g_scene_config[scene] & effect-flag)
+    {
+    }
+    if (g_scene_config[scene] & !dont-care)
+    {
+    }
+    */
+}
+
+static void savescene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t scene,
+                         int32_t group, int32_t zone_id, void *userdata)
+{
+    (void) handle;
+    (void) userdata;
+    size_t n;
+
+    for (n = 0; n < n_dsuid; n++)
+    {
+        printf("received savescene for device %s: zone %d, group %d, scene %d\n",
+                *dsuid, zone_id, group, scene);
+    }
+}
+
+static void blink_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t group, int32_t zone_id, void *userdata)
+{
+    (void) handle;
+    (void) userdata;
+    size_t n;
+
+    for (n = 0; n < n_dsuid; n++)
+    {
+        printf("received blink for device %s: zone %d, group %d\n", *dsuid, zone_id, group);
+    }
+}
+
+static void output_channel_value_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+        bool apply, int32_t channel, double value, void *userdata)
+{
+    (void) handle;
+    (void) userdata;
+    size_t n;
+
+    for (n = 0; n < n_dsuid; n++)
+    {
+        printf("received output value for device %s: channel %d, value %.2f, apply-flag %d\n",
+                *dsuid, channel, value, apply);
     }
 }
 
@@ -613,12 +857,18 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    /* setup callbacks */
+    /* connection callbacks */
     dsvdc_set_hello_callback(handle, hello_cb);
     dsvdc_set_ping_callback(handle, ping_cb);
     dsvdc_set_bye_callback(handle, bye_cb);
+    dsvdc_set_remove_callback(handle, remove_cb);
+
+    /* device callbacks */
     dsvdc_set_get_property_callback(handle, getprop_cb);
     dsvdc_set_call_scene_notification_callback(handle, callscene_cb);
+    dsvdc_set_identify_notification_callback(handle, blink_cb);
+    dsvdc_set_save_scene_notification_callback(handle, savescene_cb);
+    dsvdc_set_output_channel_value_callback(handle, output_channel_value_cb);
 
     int count = 0;
     while(!g_shutdown_flag)
@@ -641,12 +891,32 @@ int main(int argc, char **argv)
             printed = false;
             if (ready && !announced)
             {
-                if (dsvdc_announce_container(handle, g_vdc_dsuid,
-                                            (void *)g_lib_dsuid,
-                                             announce_container_cb) == DSVDC_OK)
+                int ret;
+                ret = dsvdc_announce_container(handle,
+                        g_vdc_dsuid,
+                        (void *) g_vdc_dsuid,
+                        announce_container_cb);
+                if (ret != DSVDC_OK)
                 {
-                    announced = true;
-                    count = 1;
+                    printf("dsvdc_announce_container returned error %d\n", ret);
+                }
+
+                if (ret == DSVDC_OK)
+                {
+                    int ret = dsvdc_announce_device(handle,
+                            g_vdc_dsuid,
+                            g_dev_dsuid,
+                            (void *) g_dev_dsuid,
+                            announce_device_cb);
+                    if (ret != DSVDC_OK)
+                    {
+                        printf("dsvdc_announce_device returned error %d\n", ret);
+                    }
+                    if (ret == DSVDC_OK)
+                    {
+                        announced = true;
+                        count = 1;
+                    }
                 }
             }
             if (!ready)
@@ -655,15 +925,35 @@ int main(int argc, char **argv)
             }
         }
 
-        /* the below code is just a test for the vdSM, it will periodically
-           send an "identify device" message */
+        /* the below code is just a test, it will periodically
+           send pushbutton messages and toggle the room lights on and off */
         if (count > 0)
         {
             count++;
-            if (count == 30)
+            if (count == 10)
             {
-                dsvdc_identify_device(handle, g_dev_dsuid);
-                count = 1;
+                dsvdc_property_t* pushEnvelope;
+                dsvdc_property_t* propButtonState;
+                dsvdc_property_t* prop;
+                dsvdc_property_new(&pushEnvelope);
+                dsvdc_property_new(&propButtonState);
+                dsvdc_property_new(&prop);
+
+                if (pushEnvelope == NULL || propButtonState == NULL || prop == NULL)
+                {
+                    if (pushEnvelope)    dsvdc_property_free(pushEnvelope);
+                    if (propButtonState) dsvdc_property_free(propButtonState);
+                    if (prop)            dsvdc_property_free(prop);
+                }
+                else
+                {
+                    dsvdc_property_add_uint(prop, "clickType", 0);
+                    dsvdc_property_add_property(propButtonState, "0", &prop);
+                    dsvdc_property_add_property(pushEnvelope, "buttonInputStates", &propButtonState);
+                    dsvdc_push_property(handle, g_dev_dsuid, pushEnvelope);
+                    dsvdc_property_free(pushEnvelope);
+                    count = 1;
+                }
             }
         }
     }
