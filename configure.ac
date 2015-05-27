@@ -47,7 +47,7 @@ AC_ARG_ENABLE([debug],
     [AC_HELP_STRING([--enable-debug], [build debug version]) ],
     [
         if test "x$enableval" = "xyes"; then
-            CFLAGS="$CFLAGS -g -O0"
+            CFLAGS="$CFLAGS -g -O0 -Wall"
             AC_DEFINE([DEBUG], [1], [build with debug output])
         fi
     ]
