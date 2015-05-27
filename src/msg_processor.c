@@ -146,6 +146,7 @@ void dsvdc_send_error_message(dsvdc_t *handle, Vdcapi__ResultCode code,
 
     msg.type = VDCAPI__TYPE__GENERIC_RESPONSE;
     msg.message_id = message_id;
+    msg.has_message_id = 1;
     msg.generic_response = &submsg;
     dsvdc_send_message(handle, &msg);
 }
