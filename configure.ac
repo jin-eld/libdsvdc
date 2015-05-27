@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.66])
-AC_INIT([libdsvdc], [0.3.1], [jin@dev.digitalstrom.org])
+AC_INIT([libdsvdc], [0.3.2], [jin@dev.digitalstrom.org])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([src/dsvdc.c])
 AC_CONFIG_HEADERS([config.h])
@@ -153,6 +153,11 @@ if (test "x$BUILD_DISCOVERY" = "xyes"); then
             BUILD_DISCOVERY="no"
         ])
 fi
+
+dnl libdsuid
+PKG_CHECK_MODULES([LIBDSUID], [libdsuid])
+AC_SUBST(LIBDSUID_CFLAGS)
+AC_SUBST(LIBDSUID_LIBS)
 
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_DISCOVERY, test "x$BUILD_DISCOVERY" = "xyes")
