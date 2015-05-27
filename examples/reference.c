@@ -49,15 +49,17 @@
 /*
  * TODO: fill scene table and add persistent storage
  *
-static uint8_t g_scene_values[128] = {
-        0, 0, 0, 0, 0,
-        100, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 100, 100, 100, 0,
+static uint8_t g_scene_values[128] =
+{
+    0,      0,      0,      0,      0,
+    100,    0,      0,      0,      0,
+    0,      0,      0,      0,      0,
+    0,      100,    100,    100,    0
 };
 
-static uint8_t g_scene_config[128] = {
-        0,
+static uint8_t g_scene_config[128] =
+{
+    0
 };
 
 static uint8_t g_output_value = 0;
@@ -74,7 +76,8 @@ static char g_lib_dsuid[35] = { "053f848b85bb382198025cea1fd087f100" };
 
 static int g_shutdown_flag = 0;
 
-static const uint8_t deviceIcon16_png[] = {
+static const uint8_t deviceIcon16_png[] =
+{
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
   0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
   0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0xf3, 0xff, 0x61, 0x00, 0x00, 0x00,
@@ -139,7 +142,8 @@ void get_network_interface(char *mac, int maxlen)
     }
 
     int i;
-    for (i = 0; if_name[i].if_index || if_name[i].if_name != NULL; i++) {
+    for (i = 0; if_name[i].if_index || if_name[i].if_name != NULL; i++)
+    {
         struct ifreq ifr;
         strncpy(ifr.ifr_name, if_name[i].if_name, IFNAMSIZ-1);
         ifr.ifr_name[IFNAMSIZ-1] = '\0';
@@ -149,7 +153,8 @@ void get_network_interface(char *mac, int maxlen)
             continue;
         }
 
-        if (ioctl(sock, SIOCGIFHWADDR, &ifr) >= 0) {
+        if (ioctl(sock, SIOCGIFHWADDR, &ifr) >= 0)
+        {
             int j, k;
             for (j = 0, k = 0; j < 6; j++)
             {
@@ -160,7 +165,8 @@ void get_network_interface(char *mac, int maxlen)
             {
                 mac[k] = 0;
             }
-            else {
+            else
+            {
                 mac[maxlen] = 0;
             }
             break;
@@ -204,8 +210,10 @@ static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 static bool dsuid_compare(const char *dsuid, const char *ref_dsuid)
 {
     size_t ctr;
-    for (ctr = 0; ctr < DSUID_LENGTH; ++ctr) {
-        if (dsuid[ctr] != toupper(ref_dsuid[ctr])) {
+    for (ctr = 0; ctr < DSUID_LENGTH; ++ctr)
+    {
+        if (dsuid[ctr] != toupper(ref_dsuid[ctr]))
+        {
             return false;
         }
     }
@@ -324,18 +332,20 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             }
             else if (strcmp(name, "capabilities") == 0)
             {
-              dsvdc_property_t *reply;
-              ret = dsvdc_property_new(&reply);
-              if (ret != DSVDC_OK) {
-                printf("failed to allocate reply property for %s\n", name);
-                free(name);
-                continue;
-              }
-              dsvdc_property_add_bool(reply, "metering", false);
+                dsvdc_property_t *reply;
+                ret = dsvdc_property_new(&reply);
+                if (ret != DSVDC_OK)
+                {
+                    printf("failed to allocate reply property for %s\n", name);
+                    free(name);
+                    continue;
+                }
+                dsvdc_property_add_bool(reply, "metering", false);
             }
             else if (strcmp(name, "configURL") == 0)
             {
-              dsvdc_property_add_string(property, name, "https://localhost:11111");
+                dsvdc_property_add_string(property, name,
+                                          "https://localhost:11111");
             }
             free(name);
         }
@@ -834,7 +844,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    if (random) {
+    if (random)
+    {
         /* randomize dsuid's so that we can run more than one example on the
            same machine */
         srandom(time(NULL));
