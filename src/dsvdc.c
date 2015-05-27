@@ -317,6 +317,11 @@ static int dsvdc_setup_socket(dsvdc_t *handle)
 int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
               void *userdata, dsvdc_t **handle)
 {
+
+#ifndef HAVE_AVAHI
+    (void)name;
+#endif
+
     *handle = NULL;
 
 
