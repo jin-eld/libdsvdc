@@ -704,6 +704,21 @@ void dsvdc_set_get_property_callback(dsvdc_t *handle,
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
+void dsvdc_set_set_property_callback(dsvdc_t *handle,
+                        void (*function)(dsvdc_t *handle, const char *dsuid,
+                                         dsvdc_property_t *property,
+                                         const dsvdc_property_t *properties,
+                                         void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_request_set_property = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
 void dsvdc_cleanup(dsvdc_t *handle)
 {
     if (!handle)

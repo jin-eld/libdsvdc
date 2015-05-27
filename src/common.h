@@ -137,6 +137,10 @@ struct dsvdc {
     void (*vdsm_request_get_property)(dsvdc_t *handle, const char *dsuid,
                                  dsvdc_property_t *property,
                                  const dsvdc_property_t *query, void *userdata);
+    void (*vdsm_request_set_property)(dsvdc_t *handle, const char *dsuid,
+                                 dsvdc_property_t *property,
+                                 const dsvdc_property_t *properties,
+                                 void *userdata);
     void (*vdsm_send_output_channel_value)(dsvdc_t *handle, char **dsuid,
                                  size_t n_dsuid, bool apply,
                                  int32_t channel, double value,
