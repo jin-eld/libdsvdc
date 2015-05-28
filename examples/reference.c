@@ -45,19 +45,30 @@
 #include "dsvdc.h"
 #include "common.h"
 
+/*
+ * button click states, see:
+ * https://www.digitalstrom.org/wp-content/uploads/2013/11/vDC-API-properties1.pdf
+ * Chapter, 4.2.3 ButtonInputState
+ */
+#define TIP_1X  0u
+#define TIP_2x  1u
+#define TIP_3x  2u
+#define TIP_4x  3u
 
 /*
  * TODO: fill scene table and add persistent storage
  *
-static uint8_t g_scene_values[128] = {
-        0, 0, 0, 0, 0,
-        100, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 100, 100, 100, 0,
+static uint8_t g_scene_values[128] =
+{
+    0,      0,      0,      0,      0,
+    100,    0,      0,      0,      0,
+    0,      0,      0,      0,      0,
+    0,      100,    100,    100,    0
 };
 
-static uint8_t g_scene_config[128] = {
-        0,
+static uint8_t g_scene_config[128] =
+{
+    0
 };
 
 static uint8_t g_output_value = 0;
@@ -74,7 +85,8 @@ static char g_lib_dsuid[35] = { "053f848b85bb382198025cea1fd087f100" };
 
 static int g_shutdown_flag = 0;
 
-static const uint8_t deviceIcon16_png[] = {
+static const uint8_t deviceIcon16_png[] =
+{
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
   0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
   0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0xf3, 0xff, 0x61, 0x00, 0x00, 0x00,
@@ -139,7 +151,8 @@ void get_network_interface(char *mac, int maxlen)
     }
 
     int i;
-    for (i = 0; if_name[i].if_index || if_name[i].if_name != NULL; i++) {
+    for (i = 0; if_name[i].if_index || if_name[i].if_name != NULL; i++)
+    {
         struct ifreq ifr;
         strncpy(ifr.ifr_name, if_name[i].if_name, IFNAMSIZ-1);
         ifr.ifr_name[IFNAMSIZ-1] = '\0';
@@ -149,7 +162,8 @@ void get_network_interface(char *mac, int maxlen)
             continue;
         }
 
-        if (ioctl(sock, SIOCGIFHWADDR, &ifr) >= 0) {
+        if (ioctl(sock, SIOCGIFHWADDR, &ifr) >= 0)
+        {
             int j, k;
             for (j = 0, k = 0; j < 6; j++)
             {
@@ -160,7 +174,8 @@ void get_network_interface(char *mac, int maxlen)
             {
                 mac[k] = 0;
             }
-            else {
+            else
+            {
                 mac[maxlen] = 0;
             }
             break;
@@ -192,6 +207,45 @@ Supported options:\n\
 \n", program);
 }
 
+void send_button_click(dsvdc_t *handle, uint64_t clickType)
+{
+    dsvdc_property_t* pushEnvelope;
+    dsvdc_property_t* propButtonState;
+    dsvdc_property_t* prop;
+
+    dsvdc_property_new(&pushEnvelope);
+    dsvdc_property_new(&propButtonState);
+    dsvdc_property_new(&prop);
+
+    if (pushEnvelope == NULL || propButtonState == NULL || prop == NULL)
+    {
+        if (pushEnvelope)
+        {
+            dsvdc_property_free(pushEnvelope);
+        }
+
+        if (propButtonState)
+        {
+            dsvdc_property_free(propButtonState);
+        }
+
+        if (prop)
+        {
+            dsvdc_property_free(prop);
+        }
+
+        fprintf(stderr, "send_button_click: could not allocate property");
+        return;
+    }
+
+    dsvdc_property_add_uint(prop, "clickType", clickType);
+    dsvdc_property_add_property(propButtonState, "0", &prop);
+    dsvdc_property_add_property(pushEnvelope, "buttonInputStates",
+                                &propButtonState);
+    dsvdc_push_property(handle, g_dev_dsuid, pushEnvelope);
+    dsvdc_property_free(pushEnvelope);
+}
+
 static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 {
     (void)handle;
@@ -204,8 +258,10 @@ static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
 static bool dsuid_compare(const char *dsuid, const char *ref_dsuid)
 {
     size_t ctr;
-    for (ctr = 0; ctr < DSUID_LENGTH; ++ctr) {
-        if (dsuid[ctr] != toupper(ref_dsuid[ctr])) {
+    for (ctr = 0; ctr < DSUID_LENGTH; ++ctr)
+    {
+        if (dsuid[ctr] != toupper(ref_dsuid[ctr]))
+        {
             return false;
         }
     }
@@ -259,6 +315,99 @@ static bool remove_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
     return true;
 }
 
+static void setprop_cb(dsvdc_t *handle, const char *dsuid,
+                       dsvdc_property_t *property,
+                       const dsvdc_property_t *properties,
+                       void *userdata)
+{
+    (void)userdata;
+    int ret;
+    uint8_t code = DSVDC_ERR_NOT_IMPLEMENTED;
+    size_t i;
+    printf("setprop_cb: request for dsuid \"%s\"\n",  dsuid);
+
+    /*
+     * Properties for the VDC
+     */
+    if (strcasecmp(g_dev_dsuid, dsuid) == 0)
+    {
+        for (i = 0; i < dsvdc_property_get_num_properties(properties); i++)
+        {
+            char *name;
+            ret = dsvdc_property_get_name(properties, i, &name);
+            if (ret != DSVDC_OK)
+            {
+                fprintf(stderr, "setprop_cb: error getting property name\n");
+                code = DSVDC_ERR_MISSING_DATA;
+                break;
+            }
+
+            if (!name)
+            {
+                fprintf(stderr, "setprop_cb: not yet handling wildcard "
+                                "properties\n");
+                code = DSVDC_ERR_NOT_IMPLEMENTED;
+                break;
+            }
+
+            if (strcmp(name, "actionclick") == 0)
+            {
+                dsvdc_property_value_t vt;
+                ret = dsvdc_property_get_value_type(properties, i, &vt);
+                if (ret != DSVDC_OK)
+                {
+                    fprintf(stderr, "setprop_cb: error determining %s property "
+                                    "value type\n", name);
+                    code = DSVDC_ERR_INVALID_VALUE_TYPE;
+                    free(name);
+                    break;
+                }
+
+                if (vt != DSVDC_PROPERTY_VALUE_UINT64)
+                {
+                    fprintf(stderr, "setprop_cb: unexpected value type for "
+                                    "property %s\n", name);
+                    code = DSVDC_ERR_INVALID_VALUE_TYPE;
+                    free(name);
+                    break;
+                }
+
+                uint64_t clickType;
+                ret = dsvdc_property_get_uint(properties, i, &clickType);
+                if (ret != DSVDC_OK)
+                {
+                    fprintf(stderr, "setprop_cb: error getting property value, "
+                                    "from property %s\n", name);
+                    code = DSVDC_ERR_MISSING_DATA;
+                    free(name);
+                    break;
+                }
+
+
+                if ((clickType > 14) && (clickType != 255))
+                {
+                    fprintf(stderr, "setprop_cb: unsupoprted click type value");
+                    code = DSVDC_ERR_INVALID_VALUE_TYPE;
+                    free(name);
+                    break;
+                }
+
+                code = DSVDC_OK;
+                send_button_click(handle, clickType);
+                free(name);
+                break;
+            }
+            free(name);
+        }
+    }
+    else
+    {
+        code = DSVDC_ERR_NOT_FOUND;
+    }
+
+    dsvdc_send_set_property_response(handle, property, code);
+}
+
 static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                        dsvdc_property_t *property,
                        const dsvdc_property_t *query,
@@ -281,13 +430,13 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             if (ret != DSVDC_OK)
             {
                 fprintf(stderr, "getprop_cb: error getting property name, abort\n");
-                dsvdc_send_property_response(handle, property);
+                dsvdc_send_get_property_response(handle, property);
                 return;
             }
             if (!name)
             {
                 fprintf(stderr, "getprop_cb: not yet handling wildcard properties\n");
-                dsvdc_send_property_response(handle, property);
+                dsvdc_send_get_property_response(handle, property);
                 return;
             }
             printf("getprop_cb: property name \"%s\"\n", name);
@@ -324,22 +473,24 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             }
             else if (strcmp(name, "capabilities") == 0)
             {
-              dsvdc_property_t *reply;
-              ret = dsvdc_property_new(&reply);
-              if (ret != DSVDC_OK) {
-                printf("failed to allocate reply property for %s\n", name);
-                free(name);
-                continue;
-              }
-              dsvdc_property_add_bool(reply, "metering", false);
+                dsvdc_property_t *reply;
+                ret = dsvdc_property_new(&reply);
+                if (ret != DSVDC_OK)
+                {
+                    printf("failed to allocate reply property for %s\n", name);
+                    free(name);
+                    continue;
+                }
+                dsvdc_property_add_bool(reply, "metering", false);
             }
             else if (strcmp(name, "configURL") == 0)
             {
-              dsvdc_property_add_string(property, name, "https://localhost:11111");
+                dsvdc_property_add_string(property, name,
+                                          "https://localhost:11111");
             }
             free(name);
         }
-        dsvdc_send_property_response(handle, property);
+        dsvdc_send_get_property_response(handle, property);
         return;
     }
 
@@ -359,14 +510,14 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         if (ret != DSVDC_OK)
         {
             printf("getprop_cb: error getting property name, abort\n");
-            dsvdc_send_property_response(handle, property);
+            dsvdc_send_get_property_response(handle, property);
             return;
         }
 
         if (!name)
         {
             printf("getprop_cb: empty name, not yet handling wildcard properties\n");
-            dsvdc_send_property_response(handle, property);
+            dsvdc_send_get_property_response(handle, property);
             return;
         }
 
@@ -612,7 +763,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         }
         free(name);
     }
-    dsvdc_send_property_response(handle, property);
+    dsvdc_send_get_property_response(handle, property);
 }
 
 static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t scene,
@@ -834,7 +985,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    if (random) {
+    if (random)
+    {
         /* randomize dsuid's so that we can run more than one example on the
            same machine */
         srandom(time(NULL));
@@ -865,12 +1017,12 @@ int main(int argc, char **argv)
 
     /* device callbacks */
     dsvdc_set_get_property_callback(handle, getprop_cb);
+    dsvdc_set_set_property_callback(handle, setprop_cb);
     dsvdc_set_call_scene_notification_callback(handle, callscene_cb);
     dsvdc_set_identify_notification_callback(handle, blink_cb);
     dsvdc_set_save_scene_notification_callback(handle, savescene_cb);
     dsvdc_set_output_channel_value_callback(handle, output_channel_value_cb);
 
-    int count = 0;
     while(!g_shutdown_flag)
     {
         /* let the work function do our timing, 2secs timeout */
@@ -884,7 +1036,6 @@ int main(int argc, char **argv)
             }
             announced = false;
             ready = false;
-            count = 0;
         }
         else
         {
@@ -896,11 +1047,6 @@ int main(int argc, char **argv)
                         g_vdc_dsuid,
                         (void *) g_vdc_dsuid,
                         announce_container_cb);
-                if (ret != DSVDC_OK)
-                {
-                    printf("dsvdc_announce_container returned error %d\n", ret);
-                }
-
                 if (ret == DSVDC_OK)
                 {
                     int ret = dsvdc_announce_device(handle,
@@ -908,52 +1054,23 @@ int main(int argc, char **argv)
                             g_dev_dsuid,
                             (void *) g_dev_dsuid,
                             announce_device_cb);
-                    if (ret != DSVDC_OK)
-                    {
-                        printf("dsvdc_announce_device returned error %d\n", ret);
-                    }
                     if (ret == DSVDC_OK)
                     {
                         announced = true;
-                        count = 1;
                     }
+                    else
+                    {
+                        printf("dsvdc_announce_device returned error %d\n", ret);
+                    }
+                }
+                else
+                {
+                    printf("dsvdc_announce_container returned error %d\n", ret);
                 }
             }
             if (!ready)
             {
                 announced = false;
-            }
-        }
-
-        /* the below code is just a test, it will periodically
-           send pushbutton messages and toggle the room lights on and off */
-        if (count > 0)
-        {
-            count++;
-            if (count == 10)
-            {
-                dsvdc_property_t* pushEnvelope;
-                dsvdc_property_t* propButtonState;
-                dsvdc_property_t* prop;
-                dsvdc_property_new(&pushEnvelope);
-                dsvdc_property_new(&propButtonState);
-                dsvdc_property_new(&prop);
-
-                if (pushEnvelope == NULL || propButtonState == NULL || prop == NULL)
-                {
-                    if (pushEnvelope)    dsvdc_property_free(pushEnvelope);
-                    if (propButtonState) dsvdc_property_free(propButtonState);
-                    if (prop)            dsvdc_property_free(prop);
-                }
-                else
-                {
-                    dsvdc_property_add_uint(prop, "clickType", 0);
-                    dsvdc_property_add_property(propButtonState, "0", &prop);
-                    dsvdc_property_add_property(pushEnvelope, "buttonInputStates", &propButtonState);
-                    dsvdc_push_property(handle, g_dev_dsuid, pushEnvelope);
-                    dsvdc_property_free(pushEnvelope);
-                    count = 1;
-                }
             }
         }
     }

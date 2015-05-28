@@ -635,12 +635,21 @@ int dsvdc_property_add_property(dsvdc_property_t *property, const char *name,
     return DSVDC_OK;
 }
 
-int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property)
+int dsvdc_send_get_property_response(dsvdc_t *handle, dsvdc_property_t *property)
 {
     if (!handle)
     {
-        log("can't send property response: invalid handle\n");
-        dsvdc_property_free(property);
+        log("can't send get property response: invalid handle\n");
+        if (property)
+        {
+            dsvdc_property_free(property);
+        }
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (!property)
+    {
+        log("can't send get property response: invalid property reference\n");
         return DSVDC_ERR_PARAM;
     }
 
@@ -660,6 +669,39 @@ int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property)
         reply.message_id, ret);
     dsvdc_property_free(property);
     return ret;
+}
+
+int dsvdc_send_set_property_response(dsvdc_t *handle,
+                                     dsvdc_property_t *property, uint8_t code)
+{
+    if (!handle)
+    {
+        log("can't send set property response: invalid handle\n");
+        if (property)
+        {
+            dsvdc_property_free(property);
+        }
+        return DSVDC_ERR_PARAM;
+    }
+
+    if (!property)
+    {
+        log("can't send get property response: invalid property reference\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+
+    if (code > DSVDC_ERR_NOT_AUTHORIZED)
+    {
+        log("can't send set property response: invalid code given\n");
+        return DSVDC_ERR_PARAM;
+    }
+
+    dsvdc_send_error_message(handle, (Vdcapi__ResultCode)code,
+                             property->message_id);
+    log("VDC_RESPONSE_SET_PROPERTY/%u sent\n", property->message_id);
+    dsvdc_property_free(property);
+    return DSVDC_OK;
 }
 
 int dsvdc_push_property(dsvdc_t *handle, const char *dsuid,
