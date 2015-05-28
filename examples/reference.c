@@ -77,11 +77,11 @@ static uint8_t g_dim_step_value = 5;
 static bool g_local_prioritized = false;
 */
 
-static char g_dev_dsuid[35] = { 0, };
-static char g_vdc_dsuid[35] = { "c38ec6e15c2e35edbde53a37330042f500" };
+static char g_dev_dsuid[35] = { 0 };
+static char g_vdc_dsuid[35] = { 0 };
 
 /* "library" dsuid is currently unused */
-static char g_lib_dsuid[35] = { "053f848b85bb382198025cea1fd087f100" };
+static char g_lib_dsuid[35] = { 0 };
 
 static int g_shutdown_flag = 0;
 
@@ -937,6 +937,10 @@ int main(int argc, char **argv)
     dsuid_to_string(&dsuid, g_vdc_dsuid);
 
     strcat(mac, "-0000");
+    dsuid_generate_v3_from_namespace(DSUID_NS_IEEE_MAC, mac, &dsuid);
+    dsuid_to_string(&dsuid, g_dev_dsuid);
+
+    strncpy(mac + strlen(mac) - strlen("0000"), "1111", 4);
     dsuid_generate_v3_from_namespace(DSUID_NS_IEEE_MAC, mac, &dsuid);
     dsuid_to_string(&dsuid, g_dev_dsuid);
 
