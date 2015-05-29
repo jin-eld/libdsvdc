@@ -942,7 +942,7 @@ int main(int argc, char **argv)
 
     strncpy(mac + strlen(mac) - strlen("0000"), "1111", 4);
     dsuid_generate_v3_from_namespace(DSUID_NS_IEEE_MAC, mac, &dsuid);
-    dsuid_to_string(&dsuid, g_dev_dsuid);
+    dsuid_to_string(&dsuid, g_lib_dsuid);
 
     print_copyright();
 
