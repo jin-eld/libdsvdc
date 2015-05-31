@@ -350,7 +350,7 @@ static void setprop_cb(dsvdc_t *handle, const char *dsuid,
                 break;
             }
 
-            if (strcmp(name, "actionclick") == 0)
+            if (strcmp(name, "x-libdsvdc-actionclick") == 0)
             {
                 dsvdc_property_value_t vt;
                 ret = dsvdc_property_get_value_type(properties, i, &vt);
