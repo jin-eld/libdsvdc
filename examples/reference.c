@@ -350,7 +350,7 @@ static void setprop_cb(dsvdc_t *handle, const char *dsuid,
                 break;
             }
 
-            if (strcmp(name, "actionclick") == 0)
+            if (strcmp(name, "x-libdsvdc-actionclick") == 0)
             {
                 dsvdc_property_value_t vt;
                 ret = dsvdc_property_get_value_type(properties, i, &vt);
@@ -486,7 +486,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             else if (strcmp(name, "configURL") == 0)
             {
                 dsvdc_property_add_string(property, name,
-                                          "https://localhost:11111");
+                                          "/add-ons/libdsvdc");
             }
             free(name);
         }
@@ -755,7 +755,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
         else if (strcmp(name, "configURL") == 0)
         {
             dsvdc_property_add_string(property, name,
-                "https://gitorious.digitalstrom.org/virtual-devices/libdsvdc");
+                "/add-ons/libdsvdc");
         }
         else if (strcmp(name, "scenes") == 0)
         {
