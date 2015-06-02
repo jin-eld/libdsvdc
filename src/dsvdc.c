@@ -317,6 +317,11 @@ static int dsvdc_setup_socket(dsvdc_t *handle)
 int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
               void *userdata, dsvdc_t **handle)
 {
+
+#ifndef HAVE_AVAHI
+    (void)name;
+#endif
+
     *handle = NULL;
 
 
@@ -701,6 +706,21 @@ void dsvdc_set_get_property_callback(dsvdc_t *handle,
     }
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     handle->vdsm_request_get_property = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
+void dsvdc_set_set_property_callback(dsvdc_t *handle,
+                        void (*function)(dsvdc_t *handle, const char *dsuid,
+                                         dsvdc_property_t *property,
+                                         const dsvdc_property_t *properties,
+                                         void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_request_set_property = function;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 

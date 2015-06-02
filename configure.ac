@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.66])
-AC_INIT([libdsvdc], [0.3.1], [jin@dev.digitalstrom.org])
+AC_INIT([libdsvdc], [0.3.2], [jin@dev.digitalstrom.org])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([src/dsvdc.c])
 AC_CONFIG_HEADERS([config.h])
@@ -19,7 +19,7 @@ dnl revision: increment if source code has changed, set to zero if current is
 dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
 dnl           interfaces have been removed or changed
-LIBDSVDC_LT_VERSION=4:0:0
+LIBDSVDC_LT_VERSION=5:0:0
 AC_SUBST(LIBDSVDC_LT_VERSION)
 
 
@@ -47,7 +47,7 @@ AC_ARG_ENABLE([debug],
     [AC_HELP_STRING([--enable-debug], [build debug version]) ],
     [
         if test "x$enableval" = "xyes"; then
-            CFLAGS="$CFLAGS -g -O0"
+            CFLAGS="$CFLAGS -g -O0 -Wall"
             AC_DEFINE([DEBUG], [1], [build with debug output])
         fi
     ]
@@ -153,6 +153,11 @@ if (test "x$BUILD_DISCOVERY" = "xyes"); then
             BUILD_DISCOVERY="no"
         ])
 fi
+
+dnl libdsuid
+PKG_CHECK_MODULES([LIBDSUID], [libdsuid])
+AC_SUBST(LIBDSUID_CFLAGS)
+AC_SUBST(LIBDSUID_LIBS)
 
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_DISCOVERY, test "x$BUILD_DISCOVERY" = "xyes")

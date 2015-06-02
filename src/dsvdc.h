@@ -60,7 +60,9 @@ enum
     DSVDC_ERR_NO_CONTENT_FOR_ARRAY = 7,
     DSVDC_ERR_INVALID_VALUE_TYPE = 8,
     DSVDC_ERR_MISSING_SUBMESSAGE = 9,
-    DSVDC_ERR_MISSING_DATA = 10
+    DSVDC_ERR_MISSING_DATA = 10,
+    DSVDC_ERR_NOT_FOUND = 11,
+    DSVDC_ERR_NOT_AUTHORIZED = 12
 };
 
 /*! \brief Initialize new library instance.
@@ -347,6 +349,24 @@ void dsvdc_set_get_property_callback(dsvdc_t *handle,
                          const dsvdc_property_t *query,
                          void *userdata));
 
+/*! \brief Register "set property" callback.
+ *
+ * The callback function will be called each time a
+ * VDSM_REQUEST_SET_PROPERTY message is received from the vdSM.
+ * Pass NULL for the callback function to unregister the callback.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param void (*function)(dsvdc_t *handle, const char *dsuid, const char *name,
+ *                         uint32_t index, uint32_t offset, void *userdata)
+ *                         callback function.
+ */
+void dsvdc_set_set_property_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, const char *dsuid,
+                         dsvdc_property_t *property,
+                         const dsvdc_property_t *properties,
+                         void *userdata));
+
+
 /*! \brief Send pong reply to a ping request.
  *
  * Each time you receive a ping callback, respond to it using this function.
@@ -441,7 +461,41 @@ int dsvdc_identify_device(dsvdc_t *handle, const char *dsuid);
  * \param property property which will be sent and freed.
  * \return error code, indicating if the message was sent.
  */
-int dsvdc_send_property_response(dsvdc_t *handle, dsvdc_property_t *property);
+int dsvdc_send_get_property_response(dsvdc_t *handle, dsvdc_property_t *property);
+
+/*! \brief Send a response to set property request to the vdSM.
+ *
+ * Use this function to reply to the vdSM's set property request. Make sure
+ * to use the same property handle that was allocated for you by the
+ * get property callback. This is important, because the response needs to
+ * match the request and the library takes care of this by automatically
+ * setting the appropriate responde message id, this is also the reason why
+ * there is no dSUID parameter.
+ *
+ * \note NOTE: you can only use vDC API error codes here ( > 0)
+ *
+ *  DSVDC_ERR_OK
+ *  DSVDC_ERR_MESSAGE_UNKNOWN
+ *  DSVDC_ERR_INCOMPATIBLE_API
+ *  DSVDC_ERR_SERVICE_NOT_AVAILABLE
+ *  DSVDC_ERR_INSUFFICIENT_STORAGE
+ *  DSVDC_ERR_FORBIDDEN
+ *  DSVDC_ERR_NOT_IMPLEMENTED
+ *  DSVDC_ERR_NO_CONTENT_FOR_ARRAY
+ *  DSVDC_ERR_INVALID_VALUE_TYPE
+ *  DSVDC_ERR_MISSING_SUBMESSAGE
+ *  DSVDC_ERR_MISSING_DATA
+ *  DSVDC_ERR_NOT_FOUND
+ *  DSVDC_ERR_NOT_AUTHORIZED
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param property property which you received in the set property callback.
+ * \param code your vDC API response code to vdSM.
+ * \return error code, indicating if the message was sent.
+ */
+int dsvdc_send_set_property_response(dsvdc_t *handle,
+                                     dsvdc_property_t *property, uint8_t code);
+
 
 /*! \brief Push property to vdSM.
  *

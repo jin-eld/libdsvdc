@@ -146,6 +146,7 @@ void dsvdc_send_error_message(dsvdc_t *handle, Vdcapi__ResultCode code,
 
     msg.type = VDCAPI__TYPE__GENERIC_RESPONSE;
     msg.message_id = message_id;
+    msg.has_message_id = 1;
     msg.generic_response = &submsg;
     dsvdc_send_message(handle, &msg);
 }
@@ -997,6 +998,81 @@ static cached_request_t *dsvdc_get_cached_request(dsvdc_t *handle, uint32_t id)
     return NULL;
 }
 
+static void dsvdc_process_set_property(dsvdc_t *handle, Vdcapi__Message *msg)
+{
+    log("received VDSM_REQUEST_SET_PROPERTY\n");
+
+    if (!msg->vdsm_request_set_property)
+    {
+        log("received VDSM_REQUEST_SET_PROPERTY message type, but data is "
+            "missing!\n");
+        return;
+    }
+
+    if (!msg->vdsm_request_set_property->dsuid)
+    {
+        log("received VDSM_REQUEST_SET_PROPERTY: missing dSUID!\n");
+        return;
+    }
+
+    if (!msg->vdsm_request_set_property->properties)
+    {
+        log("received VDSM_REQUEST_SET_PROPERTY: missing properties element!\n");
+        return;
+    }
+
+    log("VDSM_REQUEST_SET_PROPERTY/%u: dSUID[ %s ]\n",
+        msg->message_id, msg->vdsm_request_set_property->dsuid);
+
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    if (handle->vdsm_request_set_property)
+    {
+        dsvdc_property_t *properties = NULL;
+        dsvdc_property_t *property = NULL;
+        int ret = dsvdc_property_new(&property);
+        if (ret == DSVDC_OK)
+        {
+            property->message_id = msg->message_id;
+        }
+        else
+        {
+            log("VDSM_REQUEST_SET_PROPERTY: could not allocate new property, "
+                "error code: %d\n", ret);
+
+            dsvdc_send_error_message(handle,
+                                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                                msg->message_id);
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+            return;
+        }
+
+        ret = dsvdc_property_convert_query(
+                        msg->vdsm_request_set_property->properties,
+                        msg->vdsm_request_set_property->n_properties,
+                        &properties);
+
+        if (ret != DSVDC_OK)
+        {
+            log("VDSM_REQUEST_GET_PROPERTY: could not allocate new property, "
+                "error code: %d\n", ret);
+
+            dsvdc_send_error_message(handle,
+                                VDCAPI__RESULT_CODE__ERR_SERVICE_NOT_AVAILABLE,
+                                msg->message_id);
+            pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+            return;
+        }
+
+        handle->vdsm_request_set_property(handle,
+                msg->vdsm_request_set_property->dsuid,
+                property, properties, handle->callback_userdata);
+        if (properties)
+        {
+            dsvdc_property_free(properties);
+        }
+    }
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
 static void dsvdc_process_generic_response(dsvdc_t *handle,
                                            Vdcapi__Message *msg)
 {
@@ -1049,13 +1125,12 @@ void dsvdc_process_message(dsvdc_t *handle, unsigned char *data, uint16_t len)
             dsvdc_process_get_property(handle, msg);
             break;
 
-        case VDCAPI__TYPE__VDSM_SEND_PING:
-            dsvdc_process_ping(handle, msg);
+        case VDCAPI__TYPE__VDSM_REQUEST_SET_PROPERTY:
+            dsvdc_process_set_property(handle, msg);
             break;
 
-        case VDCAPI__TYPE__VDSM_REQUEST_SET_PROPERTY:
-            dsvdc_send_error_message(handle,
-                VDCAPI__RESULT_CODE__ERR_NOT_IMPLEMENTED, msg->message_id);
+        case VDCAPI__TYPE__VDSM_SEND_PING:
+            dsvdc_process_ping(handle, msg);
             break;
 
         case VDCAPI__TYPE__VDSM_SEND_REMOVE:
