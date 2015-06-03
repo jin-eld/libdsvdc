@@ -1,5 +1,10 @@
 libdSvDC
 
+v0.4.0	03.06.2015
+	* implemented set property callbacks
+	* fixed a bug where message id's for generic responses were not sent
+	* made a really working example out of the reference application
+
 v0.3.1	16.10.2014
 	* fixed doxygen comments
 	* improved reference example program
