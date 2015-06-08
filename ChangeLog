@@ -1,5 +1,8 @@
 libdSvDC
 
+v0.4.1	08.06.2015
+	* fixed dist target
+
 v0.4.0	03.06.2015
 	* implemented set property callbacks
 	* fixed a bug where message id's for generic responses were not sent
