@@ -10,7 +10,7 @@ BUILT_SOURCES = messages.pb-c.h \
 
 CLEANFILES = $(BUILT_SOURCES)
 
-libprotomessages_la_SOURCES = \
+nodist_libprotomessages_la_SOURCES = \
                 $(BUILT_SOURCES)
 
 libprotomessages_la_CPPFLAGS = \
