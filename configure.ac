@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.66])
-AC_INIT([libdsvdc], [0.4.0], [jin@dev.digitalstrom.org])
+AC_INIT([libdsvdc], [0.4.1], [jin@dev.digitalstrom.org])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([src/dsvdc.c])
 AC_CONFIG_HEADERS([config.h])
