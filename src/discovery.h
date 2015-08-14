@@ -30,7 +30,7 @@ enum
     DSVDC_DISCOVERY_ERR_PARAM = -1
 };
 
-int dsvdc_discovery_init(dsvdc_t *handle, const char* name);
+int dsvdc_discovery_init(dsvdc_t *handle, const char* name, bool noauto);
 void dsvdc_discovery_work(dsvdc_t *handle);
 void dsvdc_discovery_cleanup(dsvdc_t *handle);
 

@@ -32,7 +32,7 @@ START_TEST(test_init_cleanup)
 {
     dsvdc_t *handle;
     int i;
-    ck_assert_msg(dsvdc_new(0, "1", "test", NULL, &handle) == DSVDC_OK,
+    ck_assert_msg(dsvdc_new(0, "1", "test", false, NULL, &handle) == DSVDC_OK,
                   "dsvdc_new() initializatino failed");
 
     for (i = 0; i < 3; i++)
@@ -48,7 +48,7 @@ Suite *dsvdc_suite()
 {
     Suite *s = suite_create("dSvDC");
     TCase *tc_init_cleanup = tcase_create("dSvDC");
-    tcase_set_timeout(tc_init_cleanup, 4); 
+    tcase_set_timeout(tc_init_cleanup, 4);
     tcase_add_test(tc_init_cleanup, test_init_cleanup);
     suite_add_tcase(s, tc_init_cleanup);
     return s;
@@ -64,4 +64,3 @@ int main()
     srunner_free(test_runner);
     return failed;
 }
-

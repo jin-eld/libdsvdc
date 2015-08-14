@@ -71,6 +71,7 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
     inst->avahi_poll = NULL;
     inst->avahi_client = NULL;
     inst->avahi_name = NULL;
+    inst->noauto = false;
 #endif
     inst->vdsm_request_hello = NULL;
     inst->vdsm_send_ping = NULL;
@@ -315,7 +316,7 @@ static int dsvdc_setup_socket(dsvdc_t *handle)
 }
 
 int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
-              void *userdata, dsvdc_t **handle)
+              bool noauto, void *userdata, dsvdc_t **handle)
 {
 
 #ifndef HAVE_AVAHI
@@ -353,7 +354,7 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
     }
 
 #ifdef HAVE_AVAHI
-    ret = dsvdc_discovery_init(inst, name);
+    ret = dsvdc_discovery_init(inst, name, noauto);
     if (ret != DSVDC_OK)
     {
         pthread_mutex_destroy(&inst->dsvdc_handle_mutex);
@@ -739,4 +740,3 @@ void dsvdc_cleanup(dsvdc_t *handle)
 
     free(handle);
 }
-

@@ -38,7 +38,7 @@
 #include <sys/ioctl.h>
 
 #include <getopt.h>
-#define OPTSTR "rhl:c:g:"
+#define OPTSTR "rhl:c:g:n"
 
 #include <digitalSTROM/dsuid.h>
 
@@ -203,6 +203,7 @@ Supported options:\n\
     --library-dsuid     specify library dSUID\n\
     --container-dsuid   specify virtual container dSUID\n\
     --device-dsuid      specify device dSUID\n\
+    --noauto or -n      include the noauto flag in the container announcement\n\
     --help or -h        this help text\n\
 \n", program);
 }
@@ -917,6 +918,7 @@ int main(int argc, char **argv)
     int opt_index = 0;
     int o;
     bool random = false;
+    bool noauto = false;
 
     struct option long_options[] =
     {
@@ -924,6 +926,7 @@ int main(int argc, char **argv)
         { "library-dsuid", 1, 0, 'l'    },
         { "container-dsuid", 1, 0, 'c'  },
         { "device-dsuid", 1, 0, 'd'     },
+        { "noauto", 0, 0, 'n'           },
         { "help", 0, 0, 'h'             },
         { 0, 0, 0, 0                    }
     };
@@ -964,6 +967,9 @@ int main(int argc, char **argv)
                 break;
             case 'd':
                 strncpy(g_dev_dsuid, optarg, sizeof(g_lib_dsuid));
+                break;
+            case 'n':
+                noauto = true;
                 break;
             default:
                 print_usage(argv[0]);
@@ -1007,7 +1013,7 @@ int main(int argc, char **argv)
     dsvdc_t *handle = NULL;
 
     /* initialize new library instance */
-    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", &ready, &handle) != DSVDC_OK)
+    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, &ready, &handle) != DSVDC_OK)
     {
         fprintf(stderr, "dsvdc_new() initialization failed\n");
         return EXIT_FAILURE;

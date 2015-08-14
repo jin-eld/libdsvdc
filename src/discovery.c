@@ -106,6 +106,31 @@ static void dsvdc_avahi_entry_group_callback(AvahiEntryGroup *group,
     }
 }
 
+static AvahiStringList* dsvdc_avahi_create_txt_records(dsvdc_t *handle) {
+    const char *key = "dSUID=";
+    size_t len = strlen(key) + strlen(handle->vdc_dsuid) + 1;
+    char *dsuid = malloc(len);
+    if (!dsuid)
+    {
+        return NULL;
+    }
+    snprintf(dsuid, len, "%s%s", key, handle->vdc_dsuid);
+    AvahiStringList* list = avahi_string_list_new(dsuid, NULL);
+    if (!list)
+    {
+        return NULL;
+    }
+    if (handle->noauto)
+    {
+        list = avahi_string_list_add(list, "noauto");
+        if (!list)
+        {
+            return NULL;
+        }
+    }
+    return list;
+}
+
 static void dsvdc_avahi_create_services(dsvdc_t *handle, AvahiClient *client)
 {
     int ret = 0;
@@ -142,25 +167,23 @@ static void dsvdc_avahi_create_services(dsvdc_t *handle, AvahiClient *client)
     if (avahi_entry_group_is_empty(handle->avahi_group))
     {
         log("Adding service '%s'\n", handle->avahi_name);
-        const char *key = "dSUID=";
-        size_t len = strlen(key) + strlen(handle->vdc_dsuid) + 1;
-        char *txt = malloc(len);
-        if (txt)
-        {
-            snprintf(txt, len, "%s%s", key, handle->vdc_dsuid);
-        }
 
-        ret = avahi_entry_group_add_service(handle->avahi_group,
-                                            AVAHI_IF_UNSPEC,
-                                            AVAHI_PROTO_INET, 0,
-                                            handle->avahi_name,
-                                            "_ds-vdc._tcp", NULL,
-                                            NULL, handle->port, txt,
-                                            NULL);
-        if (txt)
+        AvahiStringList *txt = dsvdc_avahi_create_txt_records(handle);
+        if (!txt)
         {
-            free(txt);
+            log("could not create _ds-vdc._tcp txt records.\n");
+            goto fail;
         }
+        ret = avahi_entry_group_add_service_strlst(
+            handle->avahi_group,
+            AVAHI_IF_UNSPEC,
+            AVAHI_PROTO_INET, 0,
+            handle->avahi_name,
+            "_ds-vdc._tcp", NULL,
+            NULL, handle->port,
+            txt);
+
+        avahi_string_list_free(txt);
 
         if (ret < 0)
         {
@@ -264,7 +287,7 @@ static void dsvdc_avahi_client_callback(AvahiClient *client,
     }
 }
 
-int dsvdc_discovery_init(dsvdc_t *handle, const char *name)
+int dsvdc_discovery_init(dsvdc_t *handle, const char *name, bool noauto)
 {
     int error = 0;
 
@@ -275,6 +298,7 @@ int dsvdc_discovery_init(dsvdc_t *handle, const char *name)
 
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->noauto = noauto;
     handle->avahi_poll = avahi_simple_poll_new();
     if (!handle->avahi_poll)
     {
@@ -334,7 +358,7 @@ void dsvdc_discovery_work(dsvdc_t *handle)
         log("avahi error, reinitializing...\n");
         char *temp_name = strdup(handle->avahi_name);
         dsvdc_discovery_cleanup(handle);
-        dsvdc_discovery_init(handle, temp_name);
+        dsvdc_discovery_init(handle, temp_name, handle->noauto);
         if (temp_name)
         {
             free(temp_name);
@@ -378,4 +402,3 @@ void dsvdc_discovery_cleanup(dsvdc_t *handle)
 
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
-
