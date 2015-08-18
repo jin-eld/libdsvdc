@@ -103,6 +103,7 @@ struct dsvdc {
     AvahiSimplePoll *avahi_poll;
     AvahiClient *avahi_client;
     char *avahi_name;
+    bool noauto;
 #endif
 
     /* callbacks */
@@ -152,4 +153,3 @@ struct dsvdc {
 #endif
 
 #endif/*__LIBDSVDC_COMMON_H__*/
-

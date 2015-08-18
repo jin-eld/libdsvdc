@@ -79,7 +79,7 @@ enum
  *  \return Error/success code.
  */
 int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
-              void *userdata, dsvdc_t **handle);
+              bool noauto, void *userdata, dsvdc_t **handle);
 
 /*! \brief Free library instance and all associated resources.
  *
