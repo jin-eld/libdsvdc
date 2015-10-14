@@ -72,6 +72,7 @@ enum
  *  \param[in] name name of this instance for Avahi announcements, only relevant
  *   if the library was compiled with Avahi support. Pass NULL if you want the
  *   name to be chosen for you (default name is "digitalSTROM vDC".
+ *  \param[in] noauto avoid being connected automatically.
  *  \param[in] userdata arbitrary user data that will be passed as an argument
  *   to all callback functions.
  *  \param[out] handle newly allocated library handle, must be freeid using
