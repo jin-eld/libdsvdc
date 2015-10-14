@@ -321,6 +321,7 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
 
 #ifndef HAVE_AVAHI
     (void)name;
+    (void)noauto;
 #endif
 
     *handle = NULL;
