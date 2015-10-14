@@ -155,7 +155,11 @@ if (test "x$BUILD_DISCOVERY" = "xyes"); then
 fi
 
 dnl libdsuid
-PKG_CHECK_MODULES([LIBDSUID], [libdsuid])
+PKG_CHECK_MODULES([LIBDSUID], [libdsuid],[],
+    [
+        AC_MSG_ERROR([required library libdsuid not found])
+    ])
+
 AC_SUBST(LIBDSUID_CFLAGS)
 AC_SUBST(LIBDSUID_LIBS)
 
