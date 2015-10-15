@@ -367,11 +367,12 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
     return DSVDC_OK;
 };
 
-bool dsvdc_is_connected(dsvdc_t *handle)
+bool dsvdc_has_session(dsvdc_t *handle)
 {
     bool connected;
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     connected = (handle->connected_fd > -1);
+    connected &= handle->session;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
     return connected;
 }

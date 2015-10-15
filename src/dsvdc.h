@@ -110,7 +110,7 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout);
  * \param[in] handle dsvdc handle that was returned by dsvdc_new().
  * \return true if there is a connection, false if there is no connection.
  */
-bool dsvdc_is_connected(dsvdc_t *handle);
+bool dsvdc_has_session(dsvdc_t *handle);
 
 /*! \brief Register "new_session" callback.
  *

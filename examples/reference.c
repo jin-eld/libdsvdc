@@ -922,8 +922,6 @@ int main(int argc, char **argv)
 {
     struct sigaction action;
 
-    bool printed = false;
-
     int opt_index = 0;
     int o;
     bool random = false;
@@ -1046,14 +1044,6 @@ int main(int argc, char **argv)
     {
         /* let the work function do our timing, 2secs timeout */
         dsvdc_work(handle, 2);
-        if (!dsvdc_is_connected(handle))
-        {
-            if (!printed)
-            {
-                fprintf(stderr, "vdC example: we are not yet connected!\n");
-                printed = true;
-            }
-        }
     }
     dsvdc_device_vanished(handle, g_dev_dsuid);
     dsvdc_cleanup(handle);
