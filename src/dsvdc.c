@@ -623,6 +623,20 @@ void dsvdc_set_save_scene_notification_callback(dsvdc_t *handle,
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
+void dsvdc_set_undo_scene_notification_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, int32_t group, int32_t zone_id,
+                         void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_send_undo_scene = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
 void dsvdc_set_local_priority_notification_callback(dsvdc_t *handle,
                         void (*function)(dsvdc_t *handle, char **dsuid,
                                          size_t n_dsuid, int32_t scene,
