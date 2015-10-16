@@ -22,7 +22,7 @@ vdc_properties_SOURCES = vdc_properties.c
 
 vdc_properties_CFLAGS = \
     -I$(top_srcdir)/src \
-    -I$(top_srcdir)/messages \
+    -I$(top_builddir)/messages \
     $(PROTOBUFC_CFLAGS) \
     $(AVAHI_CFLAGS) \
     $(CHECK_CFLAGS)
