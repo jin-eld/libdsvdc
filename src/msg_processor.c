@@ -397,6 +397,15 @@ static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
     log("VDC__RESPONSE_HELLO sent with code %d\n", ret);
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    if (!handle->session)
+    {
+        handle->session = true;
+        if (handle->vdsm_new_session)
+        {
+            handle->vdsm_new_session(handle, handle->callback_userdata);
+        }
+    }
+
     if ((ret == DSVDC_OK) && (handle->vdsm_request_hello))
     {
         handle->vdsm_request_hello(handle, handle->vdsm_dsuid,
@@ -509,6 +518,15 @@ static void dsvdc_process_bye(dsvdc_t *handle, Vdcapi__Message *msg)
     {
         close(handle->connected_fd);
         handle->connected_fd = -1;
+    }
+
+    if (handle->session)
+    {
+        handle->session = false;
+        if (handle->vdsm_end_session)
+        {
+            handle->vdsm_end_session(handle, handle->callback_userdata);
+        }
     }
 
     if (handle->vdsm_send_bye)

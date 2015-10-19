@@ -97,6 +97,9 @@ struct dsvdc {
     time_t last_list_cleanup;
     uint32_t request_id;
 
+    /* vdsm has connected vdc -> session running */
+    int session;
+
     /* announcements */
 #ifdef HAVE_AVAHI
     AvahiEntryGroup *avahi_group;
@@ -108,6 +111,8 @@ struct dsvdc {
 
     /* callbacks */
     void *callback_userdata;
+    void (*vdsm_new_session) (dsvdc_t *handle, void *userdata);
+    void (*vdsm_end_session) (dsvdc_t *handle, void *userdata);
     void (*vdsm_request_hello)(dsvdc_t *handle, const char *dsuid, void *userdata);
     void (*vdsm_send_ping)(dsvdc_t *handle, const char *dsuid, void *userdata);
     void (*vdsm_send_bye)(dsvdc_t *handle, const char *dsuid, void *userdata);

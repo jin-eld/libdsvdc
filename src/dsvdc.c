@@ -65,6 +65,7 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
     inst->requests_list = NULL;
     inst->last_list_cleanup = time(NULL);
     inst->request_id = 0;
+    inst->session = 0;
     inst->callback_userdata = userdata;
 #ifdef HAVE_AVAHI
     inst->avahi_group = NULL;
@@ -73,6 +74,8 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
     inst->avahi_name = NULL;
     inst->noauto = false;
 #endif
+    inst->vdsm_new_session = NULL;
+    inst->vdsm_end_session = NULL;
     inst->vdsm_request_hello = NULL;
     inst->vdsm_send_ping = NULL;
     inst->vdsm_send_bye = NULL;
@@ -539,6 +542,30 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
     {
         pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
     }
+}
+
+void dsvdc_set_new_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_new_session = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
+void dsvdc_set_end_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_end_session = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
 void dsvdc_set_hello_callback(dsvdc_t *handle,

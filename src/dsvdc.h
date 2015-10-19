@@ -112,6 +112,36 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout);
  */
 bool dsvdc_is_connected(dsvdc_t *handle);
 
+/*! \brief Register "new_session" callback.
+ *
+ * The callback is triggered when a vdsm connects to the vdc. Actually when the
+ * initial HELLO is received. Pass NULL for the callback function to unregister.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param void (*function)(dsvdc_t *handle, void *userdata) callback function.
+ *
+ * The callback parameters are:
+ * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
+ * \param[in] userdata userdata pointer that was passed to dsvdc_new().
+ */
+void dsvdc_set_new_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata));
+
+/*! \brief Register "end_session" callback.
+ *
+ * The callback is triggered when a vdsm disconnects from the vdc. Actually when the
+ * BYE is received. Pass NULL for the callback function to unregister.
+ *
+ * \param handle dsvdc handle that was returned by dsvdc_new().
+ * \param void (*function)(dsvdc_t *handle, void *userdata) callback function.
+ *
+ * The callback parameters are:
+ * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
+ * \param[in] userdata userdata pointer that was passed to dsvdc_new().
+ */
+void dsvdc_set_end_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata));
+
 /*! \brief Register "hello" callback.
  *
  * The callback function will be called each time a VDSM_REQUEST_HELLO message
