@@ -76,9 +76,7 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
 #endif
     inst->vdsm_new_session = NULL;
     inst->vdsm_end_session = NULL;
-    inst->vdsm_request_hello = NULL;
     inst->vdsm_send_ping = NULL;
-    inst->vdsm_send_bye = NULL;
     inst->vdsm_send_remove = NULL;
     inst->vdsm_send_call_scene = NULL;
     inst->vdsm_send_save_scene = NULL;
@@ -198,10 +196,8 @@ static void dsvdc_cleanup_handle(dsvdc_t *handle)
         handle->connected_fd = -1;
     }
 
-    handle->vdsm_request_hello = NULL;
     handle->vdsm_request_get_property = NULL;
     handle->vdsm_send_ping = NULL;
-    handle->vdsm_send_bye = NULL;
     handle->vdsm_send_remove = NULL;
     handle->vdsm_send_call_scene = NULL;
     handle->vdsm_send_save_scene = NULL;
@@ -568,18 +564,6 @@ void dsvdc_set_end_session_callback(dsvdc_t *handle,
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
-void dsvdc_set_hello_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         void *userdata))
-{
-    if (!handle)
-    {
-        return;
-    }
-    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    handle->vdsm_request_hello = function;
-    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
-}
 
 void dsvdc_set_ping_callback(dsvdc_t *handle,
                         void (*function)(dsvdc_t *handle, const char *dsuid,
@@ -591,19 +575,6 @@ void dsvdc_set_ping_callback(dsvdc_t *handle,
     }
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     handle->vdsm_send_ping = function;
-    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
-}
-
-void dsvdc_set_bye_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         void *userdata))
-{
-    if (!handle)
-    {
-        return;
-    }
-    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    handle->vdsm_send_bye = function;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 

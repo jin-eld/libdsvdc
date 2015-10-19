@@ -142,42 +142,6 @@ void dsvdc_set_new_session_callback(dsvdc_t *handle,
 void dsvdc_set_end_session_callback(dsvdc_t *handle,
         void (*function)(dsvdc_t *handle, void *userdata));
 
-/*! \brief Register "hello" callback.
- *
- * The callback function will be called each time a VDSM_REQUEST_HELLO message
- * is received from the vdSM. Pass NULL for the callback function to unregister
- * the callback. After receiving "hello" you should announce your vdc's and
- * devices.
- *
- * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, void *userdata) callback function.
- *
- * The callback parameters are:
- * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
- * \param[in] dsuid dSUID of the connecting vdsm.
- * \param[in] userdata userdata pointer that was passed to dsvdc_new().
- */
-void dsvdc_set_hello_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
-
-/*! \brief Register "bye" callback.
- *
- * The callback function will be called each time a VDSM_SEND_BYE message
- * is received from the vdSM. Pass NULL for the callback function to unregister
- * the callback. After receiving "bye" you can consider the socket closed
- * and you should not attempt to send anything to the vdSM.
- *
- * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata)
- * callback function
- *
- * The callback parameters are:
- * \param[in] handle dsvdc handle that was returned by dsvdc_new().
- * \param[in] userdata userdata pointer that was passed to dsvdc_new().
- */
-void dsvdc_set_bye_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
-
 /*! \brief Register "remove" callback.
  *
  * The callback function will be called each time a VDSM_SEND_REMOVE

@@ -247,15 +247,6 @@ void send_button_click(dsvdc_t *handle, uint64_t clickType)
     dsvdc_property_free(pushEnvelope);
 }
 
-static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
-{
-    (void)handle;
-    printf("Hello callback triggered, we are ready. "
-           "Connected to vdsm %s\n", dsuid);
-    bool *ready = (bool *)userdata;
-    *ready = true;
-}
-
 static bool dsuid_compare(const char *dsuid, const char *ref_dsuid)
 {
     size_t ctr;
@@ -297,14 +288,6 @@ static void announce_container_cb(dsvdc_t *handle, int code, void *arg,
     (void)handle;
     (void)userdata;
     printf("announce_container_cb: got code %d to announcement of container %s\n", code, (char *)arg);
-}
-
-static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
-{
-    (void)handle;
-    printf("received bye, vdSM %s terminated our session\n", dsuid);
-    bool *ready = (bool *)userdata;
-    *ready = false;
 }
 
 static bool remove_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
@@ -939,7 +922,6 @@ int main(int argc, char **argv)
 {
     struct sigaction action;
 
-    bool ready = false;
     bool printed = false;
 
     int opt_index = 0;
@@ -1040,7 +1022,7 @@ int main(int argc, char **argv)
     dsvdc_t *handle = NULL;
 
     /* initialize new library instance */
-    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, &ready, &handle) != DSVDC_OK)
+    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, NULL, &handle) != DSVDC_OK)
     {
         fprintf(stderr, "dsvdc_new() initialization failed\n");
         return EXIT_FAILURE;
@@ -1049,9 +1031,7 @@ int main(int argc, char **argv)
     dsvdc_set_new_session_callback(handle, new_session_cb);
 
     /* connection callbacks */
-    dsvdc_set_hello_callback(handle, hello_cb);
     dsvdc_set_ping_callback(handle, ping_cb);
-    dsvdc_set_bye_callback(handle, bye_cb);
     dsvdc_set_remove_callback(handle, remove_cb);
 
     /* device callbacks */
@@ -1070,10 +1050,9 @@ int main(int argc, char **argv)
         {
             if (!printed)
             {
-                fprintf(stderr, "vdC example: we are not connected!\n");
+                fprintf(stderr, "vdC example: we are not yet connected!\n");
                 printed = true;
             }
-            ready = false;
         }
     }
     dsvdc_device_vanished(handle, g_dev_dsuid);
