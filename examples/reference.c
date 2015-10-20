@@ -247,15 +247,6 @@ void send_button_click(dsvdc_t *handle, uint64_t clickType)
     dsvdc_property_free(pushEnvelope);
 }
 
-static void hello_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
-{
-    (void)handle;
-    printf("Hello callback triggered, we are ready. "
-           "Connected to vdsm %s\n", dsuid);
-    bool *ready = (bool *)userdata;
-    *ready = true;
-}
-
 static bool dsuid_compare(const char *dsuid, const char *ref_dsuid)
 {
     size_t ctr;
@@ -297,14 +288,6 @@ static void announce_container_cb(dsvdc_t *handle, int code, void *arg,
     (void)handle;
     (void)userdata;
     printf("announce_container_cb: got code %d to announcement of container %s\n", code, (char *)arg);
-}
-
-static void bye_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
-{
-    (void)handle;
-    printf("received bye, vdSM %s terminated our session\n", dsuid);
-    bool *ready = (bool *)userdata;
-    *ready = false;
 }
 
 static bool remove_cb(dsvdc_t *handle, const char *dsuid, void *userdata)
@@ -901,6 +884,34 @@ static void output_channel_value_cb(dsvdc_t *handle, char **dsuid, size_t n_dsui
     }
 }
 
+static void new_session_cb(dsvdc_t *handle, void *userdata)
+{
+    (void)userdata;
+    int ret;
+    ret = dsvdc_announce_container(handle,
+                                   g_vdc_dsuid,
+                                   (void *) g_vdc_dsuid,
+                                   announce_container_cb);
+    if (ret != DSVDC_OK)
+    {
+        printf("dsvdc_announce_container returned error %d\n", ret);
+        return;
+    }
+
+    ret = dsvdc_announce_device(handle,
+                                g_vdc_dsuid,
+                                g_dev_dsuid,
+                                (void *) g_dev_dsuid,
+                                announce_device_cb);
+    if (ret != DSVDC_OK)
+    {
+        printf("dsvdc_announce_device returned error %d\n", ret);
+        return;
+    }
+
+    printf("container/device announced successfully\n");
+}
+
 unsigned int random_in_range(unsigned int min, unsigned int max)
 {
     double scaled = (double)random()/RAND_MAX;
@@ -910,10 +921,6 @@ unsigned int random_in_range(unsigned int min, unsigned int max)
 int main(int argc, char **argv)
 {
     struct sigaction action;
-
-    bool ready = false;
-    bool announced = false;
-    bool printed = false;
 
     int opt_index = 0;
     int o;
@@ -1013,16 +1020,16 @@ int main(int argc, char **argv)
     dsvdc_t *handle = NULL;
 
     /* initialize new library instance */
-    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, &ready, &handle) != DSVDC_OK)
+    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, NULL, &handle) != DSVDC_OK)
     {
         fprintf(stderr, "dsvdc_new() initialization failed\n");
         return EXIT_FAILURE;
     }
 
+    dsvdc_set_new_session_callback(handle, new_session_cb);
+
     /* connection callbacks */
-    dsvdc_set_hello_callback(handle, hello_cb);
     dsvdc_set_ping_callback(handle, ping_cb);
-    dsvdc_set_bye_callback(handle, bye_cb);
     dsvdc_set_remove_callback(handle, remove_cb);
 
     /* device callbacks */
@@ -1037,52 +1044,6 @@ int main(int argc, char **argv)
     {
         /* let the work function do our timing, 2secs timeout */
         dsvdc_work(handle, 2);
-        if (!dsvdc_is_connected(handle))
-        {
-            if (!printed)
-            {
-                fprintf(stderr, "vdC example: we are not connected!\n");
-                printed = true;
-            }
-            announced = false;
-            ready = false;
-        }
-        else
-        {
-            printed = false;
-            if (ready && !announced)
-            {
-                int ret;
-                ret = dsvdc_announce_container(handle,
-                        g_vdc_dsuid,
-                        (void *) g_vdc_dsuid,
-                        announce_container_cb);
-                if (ret == DSVDC_OK)
-                {
-                    int ret = dsvdc_announce_device(handle,
-                            g_vdc_dsuid,
-                            g_dev_dsuid,
-                            (void *) g_dev_dsuid,
-                            announce_device_cb);
-                    if (ret == DSVDC_OK)
-                    {
-                        announced = true;
-                    }
-                    else
-                    {
-                        printf("dsvdc_announce_device returned error %d\n", ret);
-                    }
-                }
-                else
-                {
-                    printf("dsvdc_announce_container returned error %d\n", ret);
-                }
-            }
-            if (!ready)
-            {
-                announced = false;
-            }
-        }
     }
     dsvdc_device_vanished(handle, g_dev_dsuid);
     dsvdc_cleanup(handle);

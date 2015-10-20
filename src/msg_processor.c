@@ -393,14 +393,23 @@ static void dsvdc_process_hello(dsvdc_t *handle, Vdcapi__Message *msg)
     reply.message_id = msg->message_id;
     reply.has_message_id = 1;
     reply.vdc_response_hello = &submsg;
+
     ret = dsvdc_send_message(handle, &reply);
-    log("VDC__RESPONSE_HELLO sent with code %d\n", ret);
+    if (DSVDC_OK != ret)
+    {
+        log("VDC__RESPONSE_HELLO sent with code %d\n", ret);
+    }
+
+    log("Connected to vdsm %s\n", msg->vdsm_request_hello->dsuid);
 
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    if ((ret == DSVDC_OK) && (handle->vdsm_request_hello))
+    if (!handle->session)
     {
-        handle->vdsm_request_hello(handle, handle->vdsm_dsuid,
-                                   handle->callback_userdata);
+        handle->session = true;
+        if (handle->vdsm_new_session)
+        {
+            handle->vdsm_new_session(handle, handle->callback_userdata);
+        }
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
@@ -503,7 +512,6 @@ static void dsvdc_process_bye(dsvdc_t *handle, Vdcapi__Message *msg)
         return;
     }
 
-
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     if (handle->connected_fd >= 0)
     {
@@ -511,10 +519,13 @@ static void dsvdc_process_bye(dsvdc_t *handle, Vdcapi__Message *msg)
         handle->connected_fd = -1;
     }
 
-    if (handle->vdsm_send_bye)
+    if (handle->session)
     {
-        handle->vdsm_send_bye(handle, msg->vdsm_send_bye->dsuid,
-                              handle->callback_userdata);
+        handle->session = false;
+        if (handle->vdsm_end_session)
+        {
+            handle->vdsm_end_session(handle, handle->callback_userdata);
+        }
     }
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
