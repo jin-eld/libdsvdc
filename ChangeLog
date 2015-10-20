@@ -1,5 +1,8 @@
 libdSvDC
 
+v0.5.0	14.10.2015
+	* added "noauto" option (prevents being connected automatically)
+
 v0.4.1	08.06.2015
 	* fixed dist target
 

@@ -72,6 +72,7 @@ enum
  *  \param[in] name name of this instance for Avahi announcements, only relevant
  *   if the library was compiled with Avahi support. Pass NULL if you want the
  *   name to be chosen for you (default name is "digitalSTROM vDC".
+ *  \param[in] noauto avoid being connected automatically.
  *  \param[in] userdata arbitrary user data that will be passed as an argument
  *   to all callback functions.
  *  \param[out] handle newly allocated library handle, must be freeid using
@@ -109,43 +110,37 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout);
  * \param[in] handle dsvdc handle that was returned by dsvdc_new().
  * \return true if there is a connection, false if there is no connection.
  */
-bool dsvdc_is_connected(dsvdc_t *handle);
+bool dsvdc_has_session(dsvdc_t *handle);
 
-/*! \brief Register "hello" callback.
+/*! \brief Register "new_session" callback.
  *
- * The callback function will be called each time a VDSM_REQUEST_HELLO message
- * is received from the vdSM. Pass NULL for the callback function to unregister
- * the callback. After receiving "hello" you should announce your vdc's and
- * devices.
+ * The callback is triggered when a vdsm connects to the vdc. Actually when the
+ * initial HELLO is received. Pass NULL for the callback function to unregister.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
  * \param void (*function)(dsvdc_t *handle, void *userdata) callback function.
  *
  * The callback parameters are:
  * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
- * \param[in] dsuid dSUID of the connecting vdsm.
  * \param[in] userdata userdata pointer that was passed to dsvdc_new().
  */
-void dsvdc_set_hello_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
+void dsvdc_set_new_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata));
 
-/*! \brief Register "bye" callback.
+/*! \brief Register "end_session" callback.
  *
- * The callback function will be called each time a VDSM_SEND_BYE message
- * is received from the vdSM. Pass NULL for the callback function to unregister
- * the callback. After receiving "bye" you can consider the socket closed
- * and you should not attempt to send anything to the vdSM.
+ * The callback is triggered when a vdsm disconnects from the vdc. Actually when the
+ * BYE is received. Pass NULL for the callback function to unregister.
  *
  * \param handle dsvdc handle that was returned by dsvdc_new().
- * \param void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata)
- * callback function
+ * \param void (*function)(dsvdc_t *handle, void *userdata) callback function.
  *
  * The callback parameters are:
- * \param[in] handle dsvdc handle that was returned by dsvdc_new().
+ * \param[in] handle dsvdc Handle that was returned by dsvdc_new().
  * \param[in] userdata userdata pointer that was passed to dsvdc_new().
  */
-void dsvdc_set_bye_callback(dsvdc_t *handle,
-        void (*function)(dsvdc_t *handle, const char *dsuid, void *userdata));
+void dsvdc_set_end_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata));
 
 /*! \brief Register "remove" callback.
  *

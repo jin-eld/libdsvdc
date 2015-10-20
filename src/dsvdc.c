@@ -65,6 +65,7 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
     inst->requests_list = NULL;
     inst->last_list_cleanup = time(NULL);
     inst->request_id = 0;
+    inst->session = 0;
     inst->callback_userdata = userdata;
 #ifdef HAVE_AVAHI
     inst->avahi_group = NULL;
@@ -73,9 +74,9 @@ static int dsvdc_setup_handle(uint16_t port, const char *dsuid,
     inst->avahi_name = NULL;
     inst->noauto = false;
 #endif
-    inst->vdsm_request_hello = NULL;
+    inst->vdsm_new_session = NULL;
+    inst->vdsm_end_session = NULL;
     inst->vdsm_send_ping = NULL;
-    inst->vdsm_send_bye = NULL;
     inst->vdsm_send_remove = NULL;
     inst->vdsm_send_call_scene = NULL;
     inst->vdsm_send_save_scene = NULL;
@@ -195,10 +196,8 @@ static void dsvdc_cleanup_handle(dsvdc_t *handle)
         handle->connected_fd = -1;
     }
 
-    handle->vdsm_request_hello = NULL;
     handle->vdsm_request_get_property = NULL;
     handle->vdsm_send_ping = NULL;
-    handle->vdsm_send_bye = NULL;
     handle->vdsm_send_remove = NULL;
     handle->vdsm_send_call_scene = NULL;
     handle->vdsm_send_save_scene = NULL;
@@ -321,6 +320,7 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
 
 #ifndef HAVE_AVAHI
     (void)name;
+    (void)noauto;
 #endif
 
     *handle = NULL;
@@ -367,11 +367,12 @@ int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
     return DSVDC_OK;
 };
 
-bool dsvdc_is_connected(dsvdc_t *handle)
+bool dsvdc_has_session(dsvdc_t *handle)
 {
     bool connected;
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     connected = (handle->connected_fd > -1);
+    connected &= handle->session;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
     return connected;
 }
@@ -540,18 +541,30 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
     }
 }
 
-void dsvdc_set_hello_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         void *userdata))
+void dsvdc_set_new_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata))
 {
     if (!handle)
     {
         return;
     }
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    handle->vdsm_request_hello = function;
+    handle->vdsm_new_session = function;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
+
+void dsvdc_set_end_session_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_end_session = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
 
 void dsvdc_set_ping_callback(dsvdc_t *handle,
                         void (*function)(dsvdc_t *handle, const char *dsuid,
@@ -563,19 +576,6 @@ void dsvdc_set_ping_callback(dsvdc_t *handle,
     }
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     handle->vdsm_send_ping = function;
-    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
-}
-
-void dsvdc_set_bye_callback(dsvdc_t *handle,
-                        void (*function)(dsvdc_t *handle, const char *dsuid,
-                                         void *userdata))
-{
-    if (!handle)
-    {
-        return;
-    }
-    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
-    handle->vdsm_send_bye = function;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
@@ -619,6 +619,20 @@ void dsvdc_set_save_scene_notification_callback(dsvdc_t *handle,
     }
     pthread_mutex_lock(&handle->dsvdc_handle_mutex);
     handle->vdsm_send_save_scene = function;
+    pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
+}
+
+void dsvdc_set_undo_scene_notification_callback(dsvdc_t *handle,
+        void (*function)(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, int32_t group, int32_t zone_id,
+                         void *userdata))
+{
+    if (!handle)
+    {
+        return;
+    }
+    pthread_mutex_lock(&handle->dsvdc_handle_mutex);
+    handle->vdsm_send_undo_scene = function;
     pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
 }
 
