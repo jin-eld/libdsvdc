@@ -1,4 +1,4 @@
-noinst_PROGRAMS = reference
+bin_PROGRAMS = reference
 
 reference_SOURCES = reference.c
 
