@@ -445,7 +445,7 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
     if (FD_ISSET(handle->listen_fd, &rfds))
     {
         memset(&fsaddr, 0, sizeof(struct sockaddr));
-        memset(&fromlen, 0, sizeof(socklen_t));
+        fromlen = sizeof(struct sockaddr);
 
         int new_fd = accept(handle->listen_fd, &fsaddr, &fromlen);
         if (new_fd < 0)
