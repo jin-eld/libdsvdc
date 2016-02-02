@@ -466,6 +466,7 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
                     continue;
                 }
                 dsvdc_property_add_bool(reply, "metering", false);
+                dsvdc_property_add_property(property, name, &reply);
             }
             else if (strcmp(name, "configURL") == 0)
             {
