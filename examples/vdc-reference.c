@@ -925,7 +925,7 @@ int main(int argc, char **argv)
 
     int opt_index = 0;
     int o;
-    bool random = false;
+    bool random_dsuid = false;
     bool noauto = false;
 
     struct option long_options[] =
@@ -965,7 +965,7 @@ int main(int argc, char **argv)
         switch (o)
         {
             case 'r':
-                random = true;
+                random_dsuid = true;
                 break;
             case 'l':
                 strncpy(g_lib_dsuid, optarg, sizeof(g_lib_dsuid));
@@ -1003,11 +1003,12 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    if (random)
+    if (random_dsuid)
     {
         /* randomize dsuid's so that we can run more than one example on the
            same machine */
         srandom(time(NULL));
+        srandom(random() ^ getpid());
         snprintf(g_lib_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
                  random_in_range(100,999));
         snprintf(g_vdc_dsuid + (strlen(g_vdc_dsuid) - 3), 4, "%u",
