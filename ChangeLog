@@ -1,5 +1,8 @@
 libdSvDC
 
+v0.6.1	10.02.2015
+	* end session when resetting connection in an error situation, #12625
+
 v0.6.0	03.02.2015
 	* improved configure script
 	* implemented undo_scene function
