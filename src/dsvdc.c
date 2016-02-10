@@ -314,6 +314,19 @@ static int dsvdc_setup_socket(dsvdc_t *handle)
     return DSVDC_OK;
 }
 
+/* this function must be called with an already locked handle mutex */
+static void dsvdc_end_session(dsvdc_t *handle)
+{
+    if (handle->session)
+    {
+        handle->session = false;
+        if (handle->vdsm_end_session)
+        {
+            handle->vdsm_end_session(handle, handle->callback_userdata);
+        }
+    }
+}
+
 int dsvdc_new(unsigned short port, const char *dsuid, const char *name,
               bool noauto, void *userdata, dsvdc_t **handle)
 {
@@ -498,6 +511,7 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
             log("could not read incoming message length or "
                 "message (%u) exceeds allowed size, resetting connection.\n",
                 ntohs(size));
+            dsvdc_end_session(handle);
             pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
             return;
         }
@@ -513,6 +527,7 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
 
                 log("could not allocate memory for incoming "
                     "message, resetting connection.\n");
+                dsvdc_end_session(handle);
                 pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
                 return;
             }
@@ -525,6 +540,7 @@ void dsvdc_work(dsvdc_t *handle, unsigned short timeout)
                 free(data);
 
                 log("could not read incoming message, resetting connection.\n");
+                dsvdc_end_session(handle);
                 pthread_mutex_unlock(&handle->dsvdc_handle_mutex);
                 return;
             }
