@@ -7,6 +7,6 @@ Name: libdsvdc
 Description: digitalSTROM vDC Interface Library
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ldsvdc @PROTOBUFC_LIBS@ @AVAHI_LIBS@ @PTHREAD_LIBS@
+Libs: -L${libdir} -ldsvdc -lgdbm @PROTOBUFC_LIBS@ @AVAHI_LIBS@ @PTHREAD_LIBS@
 Cflags: -I${includedir}
 
