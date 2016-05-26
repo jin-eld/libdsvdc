@@ -224,7 +224,7 @@ static Vdcapi__PropertyValue *dsvdc_property_copy_value(
     return val;
 }
 
-static Vdcapi__PropertyElement **dsvdc_property_deep_copy(
+Vdcapi__PropertyElement **dsvdc_property_deep_copy(
                                     Vdcapi__PropertyElement **input,
                                     size_t n_input)
 {
