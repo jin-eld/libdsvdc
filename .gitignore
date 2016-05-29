@@ -38,5 +38,6 @@ examples/vdc-reference
 *.log
 *.trs
 doc
+*.gdbm
 
 INSTALL
