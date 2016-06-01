@@ -163,6 +163,18 @@ PKG_CHECK_MODULES([LIBDSUID], [libdsuid],[],
 AC_SUBST(LIBDSUID_CFLAGS)
 AC_SUBST(LIBDSUID_LIBS)
 
+
+dnl libgdbm
+AC_CHECK_HEADER([gdbm.h], [],
+    [
+        AC_MSG_ERROR([could not find gdbm.h header])
+    ])
+
+AC_CHECK_LIB([gdbm], [gdbm_close], [],
+    [
+        AC_MSG_ERROR([coult not find gdbm library])
+    ])
+
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_DISCOVERY, test "x$BUILD_DISCOVERY" = "xyes")
 

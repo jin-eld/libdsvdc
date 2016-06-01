@@ -224,7 +224,7 @@ static Vdcapi__PropertyValue *dsvdc_property_copy_value(
     return val;
 }
 
-static Vdcapi__PropertyElement **dsvdc_property_deep_copy(
+Vdcapi__PropertyElement **dsvdc_property_deep_copy(
                                     Vdcapi__PropertyElement **input,
                                     size_t n_input)
 {
@@ -1016,6 +1016,11 @@ int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
                     free(prop);
                     return DSVDC_ERR_OUT_OF_MEMORY;
                 }
+            }
+            else
+            {
+                prop->n_properties = 1;
+                prop->properties = dsvdc_property_deep_copy(&element, 1);
             }
             break;
         }
