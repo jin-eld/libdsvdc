@@ -5,6 +5,8 @@ libdsvdc_la_includedir = $(includedir)/dsvdc
 
 libdsvdc_la_SOURCES = \
     common.h \
+    database.c \
+    database.h \
     dsvdc.c \
     dsvdc.h \
     log.h \
@@ -14,7 +16,9 @@ libdsvdc_la_SOURCES = \
     properties.h \
     properties.c \
     sockutil.c \
-    sockutil.h
+    sockutil.h \
+    util.c \
+    util.h
 
 if BUILD_DISCOVERY
 

@@ -36,6 +36,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
+#include <inttypes.h>
 
 #include <getopt.h>
 #define OPTSTR "rhl:c:g:n"
@@ -55,27 +56,10 @@
 #define TIP_3x  2u
 #define TIP_4x  3u
 
-/*
- * TODO: fill scene table and add persistent storage
- *
-static uint8_t g_scene_values[128] =
-{
-    0,      0,      0,      0,      0,
-    100,    0,      0,      0,      0,
-    0,      0,      0,      0,      0,
-    0,      100,    100,    100,    0
-};
-
-static uint8_t g_scene_config[128] =
-{
-    0
-};
-
-static uint8_t g_output_value = 0;
-static uint8_t g_min_dim_value = 5;
-static uint8_t g_dim_step_value = 5;
-static bool g_local_prioritized = false;
-*/
+#define MAX_VALUE   100 /* percent */
+#define MIN_VALUE   0
+#define DEC_STEP    10
+#define INC_STEP    10
 
 static char g_dev_dsuid[35] = { 0 };
 static char g_vdc_dsuid[35] = { 0 };
@@ -84,6 +68,8 @@ static char g_vdc_dsuid[35] = { 0 };
 static char g_lib_dsuid[35] = { 0 };
 
 static int g_shutdown_flag = 0;
+
+static double g_light_state = 0;
 
 static const uint8_t deviceIcon16_png[] =
 {
@@ -742,6 +728,35 @@ static void getprop_cb(dsvdc_t *handle, const char *dsuid,
             dsvdc_property_add_string(property, name,
                 "/add-ons/libdsvdc");
         }
+        else if (strcmp(name, "channelStates") == 0)
+        {
+            dsvdc_property_t *reply;
+            dsvdc_property_t *channel;
+
+            ret  = dsvdc_property_new(&reply);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate reply property for %s\n", name);
+                free(name);
+                continue;
+            }
+
+            ret  = dsvdc_property_new(&channel);
+            if (ret != DSVDC_OK)
+            {
+                printf("failed to allocate channel property for %s\n", name);
+                dsvdc_property_free(reply);
+                free(name);
+                continue;
+            }
+
+            printf("getprop_cb(): sending channel state %.2f\n", g_light_state);
+            dsvdc_property_add_double(channel, "value", g_light_state);
+            /* TODO: track age of state changes */
+            dsvdc_property_add_int(channel, "age", 1);
+            dsvdc_property_add_property(reply, "0", &channel);
+            dsvdc_property_add_property(property, name, &reply);
+        }
         else if (strcmp(name, "scenes") == 0)
         {
             /* TODO: add scene value/configuration property handling */
@@ -757,8 +772,9 @@ static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t 
     (void) handle;
     (void) group;
     (void) zone_id;
-    (void) userdata;
+    dsvdc_database_t *db = (dsvdc_database_t *)userdata;
     size_t n;
+    char key[11];
 
     for (n = 0; n < n_dsuid; n++)
     {
@@ -784,16 +800,28 @@ static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t 
             break;
         case 11:
             printf("call activity decrement\n");
-            break;
+            g_light_state = g_light_state - DEC_STEP;
+            if (g_light_state < MIN_VALUE)
+            {
+                g_light_state = MIN_VALUE;
+            }
+            return;
         case 12:
             printf("call activity increment\n");
-            break;
+            g_light_state = g_light_state + INC_STEP;
+            if (g_light_state > MAX_VALUE)
+            {
+                g_light_state = MAX_VALUE;
+            }
+            return;
         case 13:
             printf("call activity min\n");
-            break;
+            g_light_state = MIN_VALUE;
+            return;
         case 14:
             printf("call activity max\n");
-            break;
+            g_light_state = MAX_VALUE;
+            return;
         case 40:
             printf("call activity auto-off\n");
             break;
@@ -832,29 +860,93 @@ static void callscene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t 
             break;
     }
 
-    /*
-     * TODO: implement scene - output state handling
-     *
-    if (g_scene_config[scene] & effect-flag)
+    if (scene > 128)
     {
+        fprintf(stderr, "callscene_cb(): ignoring unknown scene number %" PRId32
+                "\n", scene);
+        return;
     }
-    if (g_scene_config[scene] & !dont-care)
+
+    dsvdc_property_t *property;
+
+    /* the scene number is the key in the datbase */
+    snprintf(key, sizeof(key), "%" PRId32, scene);
+
+    int ret = dsvdc_database_load_property(db, key, &property);
+    if (ret == DSVDC_OK)
     {
+        double value;
+        if (dsvdc_property_get_double(property, 0, &value) == DSVDC_OK)
+        {
+            printf("callscene_cb(): set value %.2f for scene %" PRId32 "\n",
+                   value, scene);
+            g_light_state = value;
+        }
+        else
+        {
+            fprintf(stderr, "callscene_cb(): could not read value for scene %"
+                    PRId32 " from database\n", scene);
+        }
+        dsvdc_property_free(property);
     }
-    */
+    else if (ret == DSVDC_ERR_DATA_NOT_FOUND)
+    {
+        fprintf(stderr, "callscene_cb(): value for scene %" PRId32
+                " was not found in the databse\n", scene);
+    }
+    else
+    {
+        fprintf(stderr, "callscene_cb(): error loading value for scene %" PRId32
+                " from the database\n", scene);
+    }
+
+    /*TODO: implement scene dont't care and effect flags */
 }
 
-static void savescene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid, int32_t scene,
-                         int32_t group, int32_t zone_id, void *userdata)
+static void savescene_cb(dsvdc_t *handle, char **dsuid, size_t n_dsuid,
+                         int32_t scene, int32_t group, int32_t zone_id,
+                         void *userdata)
 {
     (void) handle;
-    (void) userdata;
+    dsvdc_property_t *property;
+    dsvdc_database_t *db = (dsvdc_database_t *)userdata;
     size_t n;
+    char key[11];
 
     for (n = 0; n < n_dsuid; n++)
     {
-        printf("received savescene for device %s: zone %d, group %d, scene %d\n",
-                *dsuid, zone_id, group, scene);
+        printf("received savescene for device %s: zone %d, group %d, "
+               "scene %d\n", *dsuid, zone_id, group, scene);
+    }
+
+    if (scene > 128)
+    {
+        fprintf(stderr, "savescene_cb(): ignoring invalid scene number "
+                "%" PRId32 "\n", scene);
+        return;
+    }
+
+    /* the scene number is the key in the datbase */
+    snprintf(key, sizeof(key), "%" PRId32, scene);
+
+    int ret = dsvdc_property_new(&property);
+    if (ret != DSVDC_OK)
+    {
+        fprintf(stderr, "savescene_cb(): could not allocate property\n");
+        return;
+    }
+
+    dsvdc_property_add_double(property, "value", g_light_state);
+    ret = dsvdc_database_save_property(db, key, property);
+    dsvdc_property_free(property);
+    if (ret != DSVDC_OK)
+    {
+        fprintf(stderr, "savescene_cb(): could not save scene value\n");
+    }
+    else
+    {
+        printf("savescene_cb(): saved value %.2f for scene %" PRId32 "\n",
+                g_light_state, scene);
     }
 }
 
@@ -882,6 +974,11 @@ static void output_channel_value_cb(dsvdc_t *handle, char **dsuid, size_t n_dsui
     {
         printf("received output value for device %s: channel %d, value %.2f, apply-flag %d\n",
                 *dsuid, channel, value, apply);
+        /* we only have one output channel */
+        if (channel == 0)
+        {
+            g_light_state = value;
+        }
     }
 }
 
@@ -1020,11 +1117,20 @@ int main(int argc, char **argv)
            g_vdc_dsuid);
 
     dsvdc_t *handle = NULL;
+    dsvdc_database_t *db = NULL;
+
+    /* load the scene table database or create one if it does not yet exist */
+    if (dsvdc_database_open("scenetable.gdbm", true, &db) != DSVDC_OK)
+    {
+        fprintf(stderr, "dsvdc_database_open() failed\n");
+        return EXIT_FAILURE;
+    }
 
     /* initialize new library instance */
-    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, NULL, &handle) != DSVDC_OK)
+    if (dsvdc_new(0, g_lib_dsuid, "Example vDC", noauto, db, &handle) != DSVDC_OK)
     {
         fprintf(stderr, "dsvdc_new() initialization failed\n");
+        dsvdc_database_close(db);
         return EXIT_FAILURE;
     }
 
@@ -1049,6 +1155,7 @@ int main(int argc, char **argv)
     }
     dsvdc_device_vanished(handle, g_dev_dsuid);
     dsvdc_cleanup(handle);
+    dsvdc_database_close(db);
 
     return EXIT_SUCCESS;
 }

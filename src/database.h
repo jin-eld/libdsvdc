@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2013 digitalSTROM AG, Zurich, Switzerland
+    Copyright (c) 2016 digitalSTROM AG, Zurich, Switzerland
 
     Author: Sergey 'Jin' Bostandzhyan <jin@dev.digitalstrom.org>
 
@@ -16,36 +16,26 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with digitalSTROM Server. If not, see <http://www.gnu.org/licenses/>.
+    along with libdsvdc. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __DSVDC_PROPERTIES_H__
-#define __DSVDC_PROPERTIES_H__
+#ifndef __DSVDC_DATABASE_H__
+#define __DSVDC_DATABASE_H__
 
-#include <stdint.h>
-
-#include "dsvdc.h"
-#include "messages.pb-c.h"
+#include <gdbm.h>
 
 #if __GNUC__ >= 4
     #pragma GCC visibility push(hidden)
 #endif
 
-struct dsvdc_property
+struct dsvdc_database
 {
-    uint32_t message_id;
-    Vdcapi__PropertyElement **properties;
-    size_t n_properties;
+	GDBM_FILE dbf;
+    bool rw;
 };
 
-int dsvdc_property_convert_query(Vdcapi__PropertyElement **query,
-                                 size_t n_query, dsvdc_property_t **property);
-
-Vdcapi__PropertyElement **dsvdc_property_deep_copy(
-                                    Vdcapi__PropertyElement **input,
-                                    size_t n_input);
 #if __GNUC__ >= 4
     #pragma GCC visibility pop
 #endif
 
-#endif//__DSVDC_PROPERTIES_H__
+#endif// __DSVDC_DATABASE_H__

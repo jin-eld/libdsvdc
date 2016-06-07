@@ -35,6 +35,8 @@ extern "C" {
 
 typedef struct dsvdc dsvdc_t;
 typedef struct dsvdc_property dsvdc_property_t;
+typedef struct dsvdc_database dsvdc_database_t;
+
 enum
 {
     DSVDC_OK = 0,                   /*!< no error */
@@ -49,6 +51,9 @@ enum
     DSVDC_ERR_INVALID_PROPERTY = -7,/*!< invalid property structure */
     DSVDC_ERR_DISCOVERY = -8,       /*!< could not set up Avahi */
     DSVDC_ERR_PROPERTY_VALUE_TYPE = -9, /*!< property value type mismatch */
+    DSVDC_ERR_FILE_NOT_FOUND = -10, /*!< specified file was not found */
+    DSVDC_ERR_DATABASE = -11,       /*!< database related error */
+    DSVDC_ERR_DATA_NOT_FOUND = -12, /*!< requested data was not found */
 
     /* vDC API errors as received from vdSM (synced with messages.proto) */
     DSVDC_ERR_MESSAGE_UNKNOWN = 1,
@@ -791,6 +796,75 @@ int dsvdc_property_get_property_by_name(const dsvdc_property_t *property,
 int dsvdc_property_get_property_by_index(const dsvdc_property_t *property,
                                          size_t index, dsvdc_property_t **out);
 
+
+/*
+ * ****************************************************************************
+ * Property based databases.
+ *
+ * The concept introduces a simple key-value based storage where keys are
+ * well known property strings and values are dsvdc_property_t properties.
+ * ****************************************************************************
+ */
+
+/*!brief Load database.
+ *
+ * Use this function to load a database that either contains predefined device
+ * configurations or your persistent data. If rw (read/write) flag is set to 
+ * true and the database does not yet exist, it will be automatically created.
+ *
+ * \note Databases which are opened in read only mode will perform faster. On
+ * databases that support writing we enable the sync flag to protect against
+ * corruption.
+ *
+ * \param[in] filename file name of the database (including path).
+ * \param[in] rw flag that specifies if the database should be opened
+ * in read only mode (usesful for predefined configuration databases) or if
+ * is should be writable (for vdc's own custom data storage).
+ * \param[out] db database handle to use in subsequent operations. Handle must
+ * be closed when no longer required.
+ * \return error code, indicating if the operation was successful.
+ */
+int dsvdc_database_open(const char *filename, bool rw, dsvdc_database_t **db);
+
+/*!brief Close an open database, free the handle and associate resources.
+ *
+ * \param[in] db database handle
+ */
+void dsvdc_database_close(dsvdc_database_t *db);
+
+/*! \brief Load property from the database.
+ *
+ * Use this function to load a property given by a key from the database.
+ * Make sure to free your property using the dsvdc_property_free() function
+ * when you no longer need it. If the requested property does not exist
+ * in the database, the function will return a DSVDC_ERR_NOT_FOUNT error code.
+ * In this case the output property parameter will not be allocated.
+ *
+ * \param[in] db database handle.
+ * \param[in] key key associated with the record to retrieve
+ * \param[out] property the loaded property.
+ * \return error code, indicating if the property was loaded or if it was not
+ * found.
+ */
+int dsvdc_database_load_property(const dsvdc_database_t *db,
+                                const char *key, dsvdc_property_t **property);
+
+/*! \brief Save property to the database.
+ *
+ * Use this function to save a property identified by a key to the database.
+ * This function does not take ownership of your property, so you should
+ * free your property once you no longer need it.
+ *
+ * \note Saving data with a key value that already exists will overwrite
+ * the old data.
+ *
+ * \param[in] db database handle
+ * \param[in] key key under which the record will be saved
+ * \param[in] property data to save
+ * \return error code, indicating if the property was saved successfully.
+ */
+int dsvdc_database_save_property(const dsvdc_database_t *db,
+                                const char *key, dsvdc_property_t *property);
 
 #ifdef __cplusplus
 }
