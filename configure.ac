@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.66])
-AC_INIT([libdsvdc], [0.6.1], [jin@dev.digitalstrom.org])
+AC_INIT([libdsvdc], [0.7.0], [jin@dev.digitalstrom.org])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([src/dsvdc.c])
 AC_CONFIG_HEADERS([config.h])
@@ -18,8 +18,8 @@ dnl current:  increment if interfaces have been added, removed or changed
 dnl revision: increment if source code has changed, set to zero if current is
 dnl           incremented
 dnl age:      increment if interfaces have been added, set to zero if
-dnl           interfaces have been removed or changed
-LIBDSVDC_LT_VERSION=7:0:0
+dnl           interfaces have been removed
+LIBDSVDC_LT_VERSION=8:0:1
 AC_SUBST(LIBDSVDC_LT_VERSION)
 
 
