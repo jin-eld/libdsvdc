@@ -1,9 +1,13 @@
 libdSvDC
 
-v0.6.1	10.02.2015
+v0.7.0	16.06.2016
+	* add database support for key-value based data, #13611
+	* fix dsvdc_property_get_property_by_name API function
+
+v0.6.1	10.02.2016
 	* end session when resetting connection in an error situation, #12625
 
-v0.6.0	03.02.2015
+v0.6.0	03.02.2016
 	* improved configure script
 	* implemented undo_scene function
 	* reworked callbacks to support new/end session indication
